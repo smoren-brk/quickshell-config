@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import "../../components/theme"
 import "../../services"
 
@@ -6,6 +7,13 @@ Item {
     id: root
 
     property real maximumHeight: 600
+    readonly property Region blurRegion: Region {
+        Region {
+            regions: Array.from(list.contentItem.children)
+                .map(child => child.blurRegion || null).filter(region => region !== null)
+        }
+        Region { item: list; intersection: Intersection.Intersect }
+    }
     readonly property real desiredHeight: NotificationService.popupNotificationCount > 0
         ? Math.min(maximumHeight, list.contentHeight + 32)
         : 1
@@ -55,6 +63,7 @@ Item {
             required property string icon
             required property var receivedAt
             property real slideOffset: 0
+            readonly property Region blurRegion: Region { item: card; radius: card.radius }
 
             width: list.width
             height: card.implicitHeight

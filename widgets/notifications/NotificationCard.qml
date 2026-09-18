@@ -20,7 +20,7 @@ Rectangle {
     implicitHeight: Math.max(popup ? 98 : 76,
         content.implicitHeight + (popup ? 30 : 24))
     radius: popup ? 12 : 14
-    color: Theme.panelSurfaceColor
+    color: popup ? Theme.windowSurfaceColor : Theme.panelSurfaceColor
     clip: popup
     transform: Translate { x: root.slideOffset }
 

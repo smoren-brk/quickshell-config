@@ -39,8 +39,10 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "qqq-bar"
+    BackgroundEffect.blurRegion: Region { item: barBackground }
 
     Rectangle {
+        id: barBackground
         anchors.fill: parent
         color: Theme.shellBackgroundColor
 
@@ -155,8 +157,10 @@ PanelWindow {
         margins { top: 48; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-brightness"
+        BackgroundEffect.blurRegion: Region { item: brightnessBackground; radius: brightnessBackground.radius }
         WlrLayershell.keyboardFocus: root.brightnessOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
         Rectangle {
+            id: brightnessBackground
             anchors.fill: parent
             color: Theme.shellBackgroundColor
             radius: 20
@@ -181,9 +185,11 @@ PanelWindow {
         margins { top: 48; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
+        BackgroundEffect.blurRegion: Region { item: historyBackground; radius: historyBackground.radius }
         WlrLayershell.keyboardFocus: root.notificationsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         Rectangle {
+            id: historyBackground
             anchors.fill: parent
             color: Theme.shellBackgroundColor
             radius: 20
@@ -208,6 +214,7 @@ PanelWindow {
         margins { top: 48; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-popups"
+        BackgroundEffect.blurRegion: stack.blurRegion
 
         NotificationStack {
             id: stack

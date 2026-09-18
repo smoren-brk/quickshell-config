@@ -1,1 +1,2 @@
-# quickshell-config
+# Quickshell config
+
