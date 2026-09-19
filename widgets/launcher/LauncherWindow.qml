@@ -70,7 +70,7 @@ PanelWindow {
         readonly property real topOffset: Math.max(16, Math.min(root.height * 0.2, root.height - 220))
         anchors.horizontalCenter: parent.horizontalCenter
         y: topOffset - 8 * (1 - root.reveal)
-        width: Math.max(1, Math.min(720, root.width - 32))
+        width: Math.max(1, Math.min(680, root.width - 32))
         height: launcher.desiredHeight
         opacity: root.reveal
         scale: 0.98 + 0.02 * root.reveal

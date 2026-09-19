@@ -28,8 +28,8 @@ PanelWindow {
 
     screen: modelData
     color: "transparent"
-    implicitHeight: 40
-    exclusiveZone: 40
+    implicitHeight: 30
+    exclusiveZone: implicitHeight
 
     anchors {
         top: true
@@ -44,102 +44,86 @@ PanelWindow {
     Rectangle {
         id: barBackground
         anchors.fill: parent
-        color: Theme.shellBackgroundColor
+        color: Theme.menuBarBackgroundColor
 
-        Text {
-            anchors.centerIn: parent
-            text: Qt.formatDateTime(clock.date, "hh:mm AP")
-            color: Theme.primaryTextColor
-            font.family: Typography.bodyFontFamily
-            font.pixelSize: 15
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: 1
+            color: Theme.menuBarBorderColor
+        }
 
-            MouseArea {
-                anchors.centerIn: parent
-                width: parent.width + 24
-                height: 40
-                cursorShape: Qt.PointingHandCursor
+        Row {
+            id: leftSection
+            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+            spacing: 10
+            // Clip long workspace lists before they reach the status controls.
+            width: Math.min(implicitWidth, Math.max(0, rightSection.x - x - 16))
+            clip: true
+
+            MenuBarButton {
+                text: Icons.nixos
+                fontSize: 19
+                selected: LauncherState.visible && LauncherState.outputName === root.screen.name
                 onClicked: {
                     root.notificationsOpen = false;
                     root.brightnessOpen = false;
                     LauncherState.toggleForOutput(root.screen.name);
                 }
             }
+
+            StatusBarWorkspaceSection {
+                outputName: root.screen.name
+            }
         }
 
-        Rectangle {
-            id: brightnessButton
-            anchors.right: notificationButton.left
-            anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
-            width: 28
-            height: 28
-            radius: 14
-            color: root.brightnessOpen ? Theme.surfaceBorderColor : Theme.panelSurfaceColor
-            Text {
-                anchors.centerIn: parent
-                text: Icons.brightness
-                color: Theme.accentHoverColor
-                font.family: Typography.nerdIconFontFamily
-                font.pixelSize: 18
+        Row {
+            id: rightSection
+            anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
+            spacing: 3
+
+            SystemTraySection {
+                barWindow: root
             }
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+
+            MenuBarButton {
+                text: Icons.brightness
+                selected: root.brightnessOpen
                 onClicked: {
                     LauncherState.visible = false;
                     root.notificationsOpen = false;
                     root.brightnessOpen = !root.brightnessOpen;
                 }
             }
-        }
 
-        SystemTraySection {
-            id: tray
-            barWindow: root
-            anchors.right: brightnessButton.left
-            anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
-        }
-
-        Rectangle {
-            id: notificationButton
-            anchors.right: parent.right
-            anchors.rightMargin: 20
-            anchors.verticalCenter: parent.verticalCenter
-            width: bellRow.width + 20
-            height: 28
-            radius: 14
-            color: root.notificationsOpen ? Theme.surfaceBorderColor : Theme.panelSurfaceColor
-
-            Row {
-                id: bellRow
-                anchors.centerIn: parent
-                spacing: 6
-                Text {
-                    text: Icons.notifications
-                    color: NotificationService.notificationCount > 0
-                        ? Theme.accentHoverColor : Theme.primaryTextColor
-                    font.family: Typography.nerdIconFontFamily
-                    font.pixelSize: 16
-                }
-            }
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
+            MenuBarButton {
+                text: Icons.notifications
+                selected: root.notificationsOpen
                 onClicked: {
                     LauncherState.visible = false;
                     root.brightnessOpen = false;
                     root.notificationsOpen = !root.notificationsOpen;
                 }
-            }
-        }
 
-        StatusBarWorkspaceSection {
-            outputName: root.screen.name
-            anchors {
-                left: parent.left
-                leftMargin: 20
-                verticalCenter: parent.verticalCenter
+                Rectangle {
+                    anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: 5 }
+                    width: 4
+                    height: 4
+                    radius: 2
+                    color: Theme.menuBarTextColor
+                    visible: NotificationService.notificationCount > 0
+                }
+            }
+
+            MenuBarButton {
+                text: Qt.formatDateTime(clock.date, "ddd d MMM  HH:mm")
+                fontFamily: Typography.menuBarFontFamily
+                fontSize: 12
+                selected: root.notificationsOpen
+                onClicked: {
+                    LauncherState.visible = false;
+                    root.brightnessOpen = false;
+                    root.notificationsOpen = !root.notificationsOpen;
+                }
             }
         }
     }
@@ -154,7 +138,7 @@ PanelWindow {
         implicitHeight: Math.min(brightnessPanel.implicitHeight + 32, root.screen.height - 64)
         exclusionMode: ExclusionMode.Ignore
         anchors { top: true; right: true }
-        margins { top: 48; right: 8 }
+        margins { top: root.implicitHeight + 8; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-brightness"
         BackgroundEffect.blurRegion: Region { item: brightnessBackground; radius: brightnessBackground.radius }
@@ -182,7 +166,7 @@ PanelWindow {
         implicitHeight: Math.max(1, Math.min(600, root.screen.height - 64))
         exclusionMode: ExclusionMode.Ignore
         anchors { top: true; right: true }
-        margins { top: 48; right: 8 }
+        margins { top: root.implicitHeight + 8; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
         BackgroundEffect.blurRegion: Region { item: historyBackground; radius: historyBackground.radius }
@@ -211,7 +195,7 @@ PanelWindow {
         implicitHeight: stack.desiredHeight
         exclusionMode: ExclusionMode.Ignore
         anchors { top: true; right: true }
-        margins { top: 48; right: 8 }
+        margins { top: root.implicitHeight + 8; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-popups"
         BackgroundEffect.blurRegion: stack.blurRegion

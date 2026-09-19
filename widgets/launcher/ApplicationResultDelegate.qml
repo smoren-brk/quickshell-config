@@ -22,19 +22,19 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: 12
         anchors.verticalCenter: parent.verticalCenter
-        width: 36
-        height: 36
+        width: 32
+        height: 32
 
         Rectangle {
             anchors.fill: parent
-            radius: 10
-            color: Theme.selectedSurfaceColor
+            radius: 7
+            color: Theme.menuBarHoverColor
             visible: !artwork.visible
 
             Text {
                 anchors.centerIn: parent
                 text: root.result.kind === "executable" ? "" : ""
-                color: Theme.accentHoverColor
+                color: Theme.menuBarTextColor
                 font.family: Typography.nerdIconFontFamily
                 font.pixelSize: 19
             }
@@ -55,16 +55,16 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: 14
         anchors.rightMargin: 12
-        spacing: 4
+        spacing: 2
 
         Text {
             width: parent.width
             text: root.result.name
             textFormat: Text.PlainText
-            color: Theme.primaryTextColor
-            font.family: Typography.bodyFontFamily
+            color: Theme.menuBarTextColor
+            font.family: Typography.menuBarFontFamily
             font.pixelSize: 14
-            font.weight: root.selected ? Font.DemiBold : Font.Normal
+            font.weight: Font.Medium
             elide: Text.ElideRight
         }
 
@@ -72,8 +72,8 @@ Item {
             width: parent.width
             text: root.result.description
             textFormat: Text.PlainText
-            color: Theme.secondaryTextColor
-            font.family: Typography.bodyFontFamily
+            color: root.selected ? "#e5edff" : Theme.spotlightSecondaryTextColor
+            font.family: Typography.menuBarFontFamily
             font.pixelSize: 11
             elide: Text.ElideRight
             visible: text.length > 0
@@ -88,8 +88,8 @@ Item {
         width: 18
         text: "↵"
         opacity: root.selected ? 1 : 0
-        color: Theme.accentHoverColor
-        font.family: Typography.bodyFontFamily
+        color: Theme.menuBarTextColor
+        font.family: Typography.menuBarFontFamily
         font.pixelSize: 16
     }
 

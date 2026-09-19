@@ -7,11 +7,12 @@ import "../../components/theme"
 Rectangle {
     id: root
     required property var barWindow
-    property bool expanded: false
-    width: 28 + reveal.width
-    height: 28
-    radius: 14
-    color: Theme.panelSurfaceColor
+    property bool expanded: true
+    width: visible ? 26 + reveal.width : 0
+    visible: SystemTray.items.values.length > 0
+    height: 26
+    radius: 5
+    color: "transparent"
 
     Item {
         id: reveal
@@ -35,10 +36,10 @@ Rectangle {
                 Rectangle {
                     id: trayItem
                     required property var modelData
-                    width: 28
-                    height: 28
-                    radius: 14
-                    color: mouse.containsMouse ? Theme.panelSurfaceColor : "transparent"
+                    width: 26
+                    height: 26
+                    radius: 5
+                    color: mouse.containsMouse ? Theme.menuBarHoverColor : "transparent"
         
                     function showMenu(): void {
                         if (modelData.hasMenu) {
@@ -49,7 +50,7 @@ Rectangle {
         
                     IconImage {
                         anchors.centerIn: parent
-                        implicitSize: 18
+                        implicitSize: 16
                         source: trayItem.modelData.icon
                     }
         
@@ -84,17 +85,17 @@ Rectangle {
 
     Rectangle {
         anchors.right: parent.right
-        width: 28
-        height: 28
-        radius: 14
-        color: toggleMouse.containsMouse ? Theme.surfaceBorderColor : "transparent"
+        width: 26
+        height: 26
+        radius: 5
+        color: toggleMouse.containsMouse ? Theme.menuBarHoverColor : "transparent"
 
         Text {
             anchors.centerIn: parent
             text: root.expanded ? "›" : "‹"
-            color: root.expanded ? Theme.accentHoverColor : Theme.primaryTextColor
+            color: Theme.menuBarTextColor
             font.family: Typography.bodyFontFamily
-            font.pixelSize: 22
+            font.pixelSize: 18
         }
 
         MouseArea {

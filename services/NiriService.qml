@@ -8,6 +8,14 @@ Singleton {
 
     property var workspaces: []
     property bool connected: false
+    readonly property string activeAppId: connected && niri.focusedWindow
+        ? niri.focusedWindow.appId : ""
+    readonly property string activeAppName: {
+        if (!activeAppId)
+            return "";
+        const entry = DesktopEntries.heuristicLookup(activeAppId);
+        return entry ? entry.name : activeAppId.split(".").pop();
+    }
     readonly property string focusedOutput: workspaces.find(workspace => workspace.isFocused)?.output || ""
 
     function workspacesForOutput(name: string): var {

@@ -18,22 +18,16 @@ Item {
     property alias focusTarget: searchInput
     property real blurScale: 1
     readonly property Region blurRegion: Region {
-        Region {
-            item: searchBackground
-            radius: Math.round(searchBackground.radius * root.blurScale)
-        }
-        Region {
-            item: resultsPanel.visible ? resultsPanel : null
-            radius: Math.round(resultsPanel.radius * root.blurScale)
-        }
+        item: spotlightBackground
+        radius: Math.round(spotlightBackground.radius * root.blurScale)
     }
 
     readonly property string query: searchInput.text.trim()
     readonly property bool commandMode: query.startsWith(">")
     readonly property string contentQuery: commandMode ? query.slice(1).trim() : query
     readonly property bool showingResults: query.length > 0 || browsing
-    readonly property int rowHeight: 62
-    readonly property real desiredHeight: 68 + (showingResults ? 12 + resultsPanel.height : 28)
+    readonly property int rowHeight: 56
+    readonly property real desiredHeight: 68 + (showingResults ? resultsPanel.height : 28)
     // Retain the visible rows until the window has finished fading out.
     property var results: []
     readonly property var searchResults: {
@@ -43,7 +37,7 @@ Item {
         const commands = query ? Search.executables(executableIndex.entries, contentQuery) : [];
         return apps.concat(commands).sort((first, second) => second.score - first.score || (first.kind === second.kind ? 0 : first.kind === "app" ? -1 : 1) || first.name.localeCompare(second.name));
     }
-    readonly property string statusText: executableIndex.error || (executableIndex.busy ? "Reading executables…" : commandMode ? "EXECUTABLES · " + results.length : results.length + " RESULTS")
+    readonly property string statusText: executableIndex.error || (executableIndex.busy ? "Reading executables…" : commandMode ? "Executables · " + results.length : results.length + " results")
 
     signal closeRequested
 
@@ -116,12 +110,26 @@ Item {
     }
 
     Rectangle {
+        id: spotlightBackground
+        anchors.fill: parent
+        radius: 16
+        color: Theme.spotlightBackgroundColor
+        border.color: Theme.spotlightBorderColor
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 1
+            radius: 15
+            color: "transparent"
+            border.color: Qt.alpha("black", 0.18)
+        }
+    }
+
+    Rectangle {
         id: searchBackground
         width: parent.width
         height: 68
-        radius: 22
-        color: Theme.shellBackgroundColor
-        border.color: Theme.surfaceBorderColor
+        color: "transparent"
 
         Text {
             id: searchIcon
@@ -130,7 +138,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: 24
             text: root.commandMode ? "" : ""
-            color: Theme.accentHoverColor
+            color: Theme.spotlightSecondaryTextColor
             font.family: Typography.nerdIconFontFamily
             font.pixelSize: 22
         }
@@ -146,11 +154,11 @@ Item {
                 rightMargin: 16
             }
             verticalAlignment: TextInput.AlignVCenter
-            color: Theme.primaryTextColor
-            selectionColor: Theme.selectedSurfaceColor
-            selectedTextColor: Theme.primaryTextColor
-            font.pixelSize: 19
-            font.family: Typography.bodyFontFamily
+            color: Theme.menuBarTextColor
+            selectionColor: Theme.spotlightSelectionColor
+            selectedTextColor: Theme.menuBarTextColor
+            font.pixelSize: 24
+            font.family: Typography.menuBarFontFamily
             selectByMouse: true
             clip: true
             focus: true
@@ -181,7 +189,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 visible: searchInput.text.length === 0 && searchInput.preeditText.length === 0
                 text: "Search apps and commands…"
-                color: Theme.mutedTextColor
+                color: Theme.spotlightSecondaryTextColor
                 font: searchInput.font
                 elide: Text.ElideRight
             }
@@ -194,15 +202,15 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: hintText.implicitWidth + 16
             height: 26
-            radius: 8
-            color: Theme.panelSurfaceColor
+            radius: 5
+            color: Theme.menuBarHoverColor
 
             Text {
                 id: hintText
                 anchors.centerIn: parent
                 text: root.showingResults ? "esc" : "↓ apps"
-                color: Theme.secondaryTextColor
-                font.family: Typography.bodyFontFamily
+                color: Theme.spotlightSecondaryTextColor
+                font.family: Typography.menuBarFontFamily
                 font.pixelSize: 11
             }
 
@@ -222,14 +230,14 @@ Item {
 
     Text {
         anchors.top: searchBackground.bottom
-        anchors.topMargin: 10
+        anchors.topMargin: 2
         anchors.horizontalCenter: parent.horizontalCenter
         visible: !root.showingResults
         width: Math.max(0, parent.width - 32)
         horizontalAlignment: Text.AlignHCenter
         text: "↓ browse apps     > executables"
-        color: Theme.secondaryTextColor
-        font.family: Typography.bodyFontFamily
+        color: Theme.spotlightSecondaryTextColor
+        font.family: Typography.menuBarFontFamily
         font.pixelSize: 11
         elide: Text.ElideRight
     }
@@ -237,13 +245,12 @@ Item {
     Rectangle {
         id: resultsPanel
         anchors.top: searchBackground.bottom
-        anchors.topMargin: 12
+        anchors.topMargin: 0
         width: parent.width
-        height: Math.max(0, Math.min(root.maximumHeight - 80, 54 + Math.max(1, Math.min(7, root.results.length)) * root.rowHeight))
+        height: Math.max(0, Math.min(root.maximumHeight - 68, 54 + Math.max(1, Math.min(7, root.results.length)) * root.rowHeight))
         visible: root.showingResults
-        color: Theme.shellBackgroundColor
-        border.color: Theme.surfaceBorderColor
-        radius: 20
+        color: "transparent"
+        radius: 0
         clip: true
 
         Behavior on height {
@@ -252,6 +259,12 @@ Item {
                 duration: 160
                 easing.type: Easing.OutCubic
             }
+        }
+
+        Rectangle {
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: 1
+            color: Theme.menuBarBorderColor
         }
 
         ListView {
@@ -269,9 +282,8 @@ Item {
             highlightMoveDuration: 100
             highlightResizeDuration: 0
             highlight: Rectangle {
-                radius: 12
-                color: Theme.selectedSurfaceColor
-                border.color: Theme.surfaceBorderColor
+                radius: 7
+                color: Theme.spotlightSelectionColor
             }
 
             delegate: ApplicationResultDelegate {
@@ -291,7 +303,7 @@ Item {
                 contentItem: Rectangle {
                     implicitWidth: 4
                     radius: 2
-                    color: Theme.surfaceBorderColor
+                    color: Theme.menuBarSelectedColor
                 }
                 background: Item {}
             }
@@ -303,8 +315,8 @@ Item {
             visible: root.results.length === 0
             text: executableIndex.busy ? "Reading executables…" : "No matches found"
             horizontalAlignment: Text.AlignHCenter
-            color: Theme.secondaryTextColor
-            font.family: Typography.bodyFontFamily
+            color: Theme.spotlightSecondaryTextColor
+            font.family: Typography.menuBarFontFamily
             font.pixelSize: 14
             elide: Text.ElideRight
         }
@@ -317,7 +329,7 @@ Item {
             anchors.leftMargin: 18
             anchors.rightMargin: 18
             height: 1
-            color: Qt.alpha(Theme.surfaceBorderColor, 0.5)
+            color: Theme.menuBarBorderColor
         }
 
         Text {
@@ -328,8 +340,8 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 11
             text: root.statusText
-            color: executableIndex.error ? Theme.dangerColor : Theme.mutedTextColor
-            font.family: Typography.bodyFontFamily
+            color: executableIndex.error ? Theme.dangerColor : Theme.spotlightSecondaryTextColor
+            font.family: Typography.menuBarFontFamily
             font.pixelSize: 10
             elide: Text.ElideRight
         }
@@ -342,8 +354,8 @@ Item {
             anchors.bottomMargin: 10
             visible: root.width > 440
             text: "↑ ↓ select    ↵ launch"
-            color: Theme.secondaryTextColor
-            font.family: Typography.bodyFontFamily
+            color: Theme.spotlightSecondaryTextColor
+            font.family: Typography.menuBarFontFamily
             font.pixelSize: 11
         }
     }

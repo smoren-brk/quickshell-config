@@ -3,6 +3,7 @@ pragma Singleton
 import Quickshell
 
 Singleton {
+    readonly property string nixos: "\uf313"
     readonly property string brightness: "󰃠"
     readonly property string notifications: "󰂚"
     readonly property string close: "󰅖"
