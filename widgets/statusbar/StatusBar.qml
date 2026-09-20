@@ -5,7 +5,8 @@ import "../../components/theme"
 import "../../services"
 import "../notifications"
 import "../launcher"
-import "../brightness"
+import "../controlcenter"
+import "../volume"
 import "../../components/state"
 
 PanelWindow {
@@ -14,14 +15,17 @@ PanelWindow {
     required property var modelData
 
     property bool notificationsOpen: false
-    property bool brightnessOpen: false
+    readonly property bool controlCenterOpen: ControlCenterState.visible
+        && ControlCenterState.outputName === root.screen.name
 
-    Binding {
-        target: BrightnessService
-        property: "active"
-        value: true
-        when: root.brightnessOpen
-        restoreMode: Binding.RestoreBindingOrValue
+    onControlCenterOpenChanged: if (controlCenterOpen) notificationsOpen = false
+    readonly property bool volumeOpen: VolumeService.visible && VolumeService.outputName === root.screen.name
+
+    onVolumeOpenChanged: {
+        if (volumeOpen) {
+            notificationsOpen = false;
+            LauncherState.visible = false;
+        }
     }
 
     SystemClock { id: clock; precision: SystemClock.Minutes }
@@ -66,7 +70,8 @@ PanelWindow {
                 selected: LauncherState.visible && LauncherState.outputName === root.screen.name
                 onClicked: {
                     root.notificationsOpen = false;
-                    root.brightnessOpen = false;
+                    ControlCenterState.visible = false;
+                    VolumeService.hide();
                     LauncherState.toggleForOutput(root.screen.name);
                 }
             }
@@ -86,12 +91,35 @@ PanelWindow {
             }
 
             MenuBarButton {
-                text: Icons.brightness
-                selected: root.brightnessOpen
-                onClicked: {
-                    LauncherState.visible = false;
-                    root.notificationsOpen = false;
-                    root.brightnessOpen = !root.brightnessOpen;
+                selected: root.controlCenterOpen
+                onClicked: ControlCenterState.toggleForOutput(root.screen.name)
+                Accessible.role: Accessible.Button
+                Accessible.name: "Control Centre"
+
+                Item {
+                    anchors.centerIn: parent
+                    width: 18
+                    height: 16
+                    Repeater {
+                        model: 2
+                        Rectangle {
+                            required property int index
+                            y: index * 9
+                            width: 18
+                            height: 7
+                            radius: 3.5
+                            color: index === 0 ? Theme.menuBarTextColor : "transparent"
+                            border.color: Theme.menuBarTextColor
+                            Rectangle {
+                                x: parent.index === 0 ? 2 : 11
+                                y: 1.5
+                                width: 4
+                                height: 4
+                                radius: 2
+                                color: parent.index === 0 ? Theme.panelSurfaceColor : Theme.menuBarTextColor
+                            }
+                        }
+                    }
                 }
             }
 
@@ -99,8 +127,9 @@ PanelWindow {
                 text: Icons.notifications
                 selected: root.notificationsOpen
                 onClicked: {
+                    VolumeService.hide();
                     LauncherState.visible = false;
-                    root.brightnessOpen = false;
+                    ControlCenterState.visible = false;
                     root.notificationsOpen = !root.notificationsOpen;
                 }
 
@@ -115,13 +144,14 @@ PanelWindow {
             }
 
             MenuBarButton {
-                text: Qt.formatDateTime(clock.date, "ddd d MMM  HH:mm")
+                text: Qt.formatDateTime(clock.date, "HH:mm")
                 fontFamily: Typography.menuBarFontFamily
                 fontSize: 12
                 selected: root.notificationsOpen
                 onClicked: {
+                    VolumeService.hide();
                     LauncherState.visible = false;
-                    root.brightnessOpen = false;
+                    ControlCenterState.visible = false;
                     root.notificationsOpen = !root.notificationsOpen;
                 }
             }
@@ -131,32 +161,40 @@ PanelWindow {
     LauncherWindow { targetScreen: root.screen }
 
     PanelWindow {
+        id: volumeWindow
+        property real reveal: root.volumeOpen ? 1 : 0
+
         screen: root.screen
-        visible: root.brightnessOpen
+        visible: root.volumeOpen || reveal > 0
         color: "transparent"
-        implicitWidth: Math.min(360, root.screen.width)
-        implicitHeight: Math.min(brightnessPanel.implicitHeight + 32, root.screen.height - 64)
+        implicitWidth: volumePanel.implicitWidth
+        implicitHeight: volumePanel.implicitHeight
         exclusionMode: ExclusionMode.Ignore
-        anchors { top: true; right: true }
-        margins { top: root.implicitHeight + 8; right: 8 }
+        anchors { bottom: true }
+        // Keep the HUD center at three quarters of the output height.
+        margins.bottom: Math.max(0, Math.round(root.screen.height * 0.25 - implicitHeight / 2))
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "qqq-brightness"
-        BackgroundEffect.blurRegion: Region { item: brightnessBackground; radius: brightnessBackground.radius }
-        WlrLayershell.keyboardFocus: root.brightnessOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-        Rectangle {
-            id: brightnessBackground
+        WlrLayershell.namespace: "qqq-volume"
+        WlrLayershell.keyboardFocus: root.volumeOpen && !VolumeService.autoHide
+            ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        BackgroundEffect.blurRegion: Region { item: volumePanel; radius: volumePanel.radius }
+        mask: Region { item: root.volumeOpen ? volumePanel : null; radius: volumePanel.radius }
+
+        Behavior on reveal {
+            NumberAnimation { duration: root.volumeOpen ? 100 : 180 }
+        }
+
+        VolumePanel {
+            id: volumePanel
             anchors.fill: parent
-            color: Theme.shellBackgroundColor
-            radius: 20
-            border.color: Theme.surfaceBorderColor
-            BrightnessPanel {
-                id: brightnessPanel
-                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
-                focus: root.brightnessOpen
-                Keys.onEscapePressed: root.brightnessOpen = false
-            }
+            opacity: volumeWindow.reveal
+            enabled: root.volumeOpen
+            focus: root.volumeOpen
+            Keys.onEscapePressed: VolumeService.hide()
         }
     }
+
+    ControlCenterWindow { targetScreen: root.screen; barHeight: root.implicitHeight }
 
     PanelWindow {
         screen: root.screen
@@ -189,7 +227,7 @@ PanelWindow {
 
     PanelWindow {
         screen: root.screen
-        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen
+        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen && !root.controlCenterOpen
         color: "transparent"
         implicitWidth: Math.min(380, root.screen.width)
         implicitHeight: stack.desiredHeight

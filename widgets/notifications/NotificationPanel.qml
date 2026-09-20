@@ -51,11 +51,7 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
 
             add: Transition {
-                NumberAnimation { properties: "opacity,y"; duration: 220; easing.type: Easing.OutCubic }
-            }
-
-            displaced: Transition {
-                NumberAnimation { properties: "y"; duration: 220; easing.type: Easing.OutCubic }
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 160 }
             }
 
             delegate: Item {

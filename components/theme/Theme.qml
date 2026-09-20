@@ -25,6 +25,7 @@ Singleton {
     readonly property color accentHoverColor: "#e5c890"
     readonly property color accentTextColor: "#11111b"
     readonly property color panelSurfaceColor: "#222222"
+    readonly property color controlCenterCardColor: panelSurfaceColor
     readonly property color windowSurfaceColor: Qt.alpha(panelSurfaceColor, backgroundOpacity)
     readonly property color secondaryTextColor: "#a6adc8"
     readonly property color surfaceBorderColor: "#454545"

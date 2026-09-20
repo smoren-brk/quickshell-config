@@ -17,8 +17,8 @@ Rectangle {
 
     signal closeRequested(int notificationId)
 
-    implicitHeight: Math.max(popup ? 98 : 76,
-        content.implicitHeight + (popup ? 30 : 24))
+    implicitHeight: Math.ceil(Math.max(popup ? 98 : 76,
+        content.implicitHeight + (popup ? 30 : 24)))
     radius: popup ? 12 : 14
     color: popup ? Theme.windowSurfaceColor : Theme.panelSurfaceColor
     clip: popup
@@ -42,12 +42,14 @@ Rectangle {
         id: content
 
         anchors {
-            fill: parent
+            top: parent.top
+            left: parent.left
+            right: parent.right
             topMargin: root.popup ? 14 : 12
             rightMargin: root.popup ? 42 : 36
-            bottomMargin: root.popup ? 14 : 12
             leftMargin: root.popup ? 14 : 12
         }
+        height: implicitHeight
         spacing: root.popup ? 13 : 10
 
         ClippingRectangle {
