@@ -7,7 +7,7 @@ import "../../components/theme"
 Rectangle {
     id: root
     required property var barWindow
-    property bool expanded: true
+    property bool expanded: false
     width: visible ? 26 + reveal.width : 0
     visible: SystemTray.items.values.length > 0
     height: 26

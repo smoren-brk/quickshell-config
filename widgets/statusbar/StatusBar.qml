@@ -15,14 +15,37 @@ PanelWindow {
     required property var modelData
 
     property bool notificationsOpen: false
+    property bool systemMenuOpen: false
+    property bool calendarOpen: false
+
+    onSystemMenuOpenChanged: if (systemMenuOpen) calendarOpen = false
+    onNotificationsOpenChanged: if (notificationsOpen) calendarOpen = false
     readonly property bool controlCenterOpen: ControlCenterState.visible
         && ControlCenterState.outputName === root.screen.name
 
-    onControlCenterOpenChanged: if (controlCenterOpen) notificationsOpen = false
+    onControlCenterOpenChanged: {
+        if (controlCenterOpen) {
+            calendarOpen = false;
+            notificationsOpen = false;
+            systemMenuOpen = false;
+        }
+    }
+
+    Connections {
+        target: LauncherState
+        function onVisibleChanged() {
+            if (LauncherState.visible) {
+                root.systemMenuOpen = false;
+                root.calendarOpen = false;
+            }
+        }
+    }
     readonly property bool volumeOpen: VolumeService.visible && VolumeService.outputName === root.screen.name
 
     onVolumeOpenChanged: {
         if (volumeOpen) {
+            systemMenuOpen = false;
+            calendarOpen = false;
             notificationsOpen = false;
             LauncherState.visible = false;
         }
@@ -67,12 +90,15 @@ PanelWindow {
             MenuBarButton {
                 text: Icons.nixos
                 fontSize: 19
-                selected: LauncherState.visible && LauncherState.outputName === root.screen.name
+                selected: root.systemMenuOpen
+                Accessible.role: Accessible.Button
+                Accessible.name: "NixOS menu"
                 onClicked: {
                     root.notificationsOpen = false;
                     ControlCenterState.visible = false;
                     VolumeService.hide();
-                    LauncherState.toggleForOutput(root.screen.name);
+                    LauncherState.visible = false;
+                    root.systemMenuOpen = !root.systemMenuOpen;
                 }
             }
 
@@ -88,6 +114,20 @@ PanelWindow {
 
             SystemTraySection {
                 barWindow: root
+            }
+
+            MenuBarButton {
+                text: "\uf002"
+                selected: LauncherState.visible && LauncherState.outputName === root.screen.name
+                Accessible.role: Accessible.Button
+                Accessible.name: "Spotlight"
+                onClicked: {
+                    root.systemMenuOpen = false;
+                    root.notificationsOpen = false;
+                    ControlCenterState.visible = false;
+                    VolumeService.hide();
+                    LauncherState.toggleForOutput(root.screen.name);
+                }
             }
 
             MenuBarButton {
@@ -130,6 +170,7 @@ PanelWindow {
                     VolumeService.hide();
                     LauncherState.visible = false;
                     ControlCenterState.visible = false;
+                    root.systemMenuOpen = false;
                     root.notificationsOpen = !root.notificationsOpen;
                 }
 
@@ -147,15 +188,34 @@ PanelWindow {
                 text: Qt.formatDateTime(clock.date, "HH:mm")
                 fontFamily: Typography.menuBarFontFamily
                 fontSize: 12
-                selected: root.notificationsOpen
+                selected: root.calendarOpen
+                Accessible.role: Accessible.Button
+                Accessible.name: "Calendar"
                 onClicked: {
                     VolumeService.hide();
                     LauncherState.visible = false;
                     ControlCenterState.visible = false;
-                    root.notificationsOpen = !root.notificationsOpen;
+                    root.systemMenuOpen = false;
+                    root.notificationsOpen = false;
+                    root.calendarOpen = !root.calendarOpen;
                 }
             }
         }
+    }
+
+    SystemMenuWindow {
+        targetScreen: root.screen
+        barHeight: root.implicitHeight
+        opened: root.systemMenuOpen
+        onDismissed: root.systemMenuOpen = false
+    }
+
+    CalendarWindow {
+        targetScreen: root.screen
+        barHeight: root.implicitHeight
+        opened: root.calendarOpen
+        today: clock.date
+        onDismissed: root.calendarOpen = false
     }
 
     LauncherWindow { targetScreen: root.screen }
@@ -227,7 +287,7 @@ PanelWindow {
 
     PanelWindow {
         screen: root.screen
-        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen && !root.controlCenterOpen
+        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen && !root.controlCenterOpen && !root.calendarOpen
         color: "transparent"
         implicitWidth: Math.min(380, root.screen.width)
         implicitHeight: stack.desiredHeight
