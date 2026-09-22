@@ -57,7 +57,7 @@ Rectangle {
             elide: Text.ElideRight
             color: Theme.menuBarTextColor
             font.family: Typography.menuBarFontFamily
-            font.pixelSize: 16
+            font.pixelSize: 13
             font.weight: Font.DemiBold
         }
 
@@ -108,15 +108,16 @@ Rectangle {
                     height: 36
                     radius: 18
                     visible: day.isToday
-                    color: Theme.spotlightSelectionColor
+                    color: Theme.neutralSelectionColor
                 }
 
                 Text {
                     anchors.centerIn: parent
                     text: day.value.getDate()
-                    color: day.currentMonth || day.isToday ? Theme.menuBarTextColor : Theme.menuBarMutedColor
+                    color: day.isToday ? Theme.neutralSelectionTextColor
+                        : day.currentMonth ? Theme.menuBarTextColor : Theme.menuBarMutedColor
                     font.family: Typography.menuBarFontFamily
-                    font.pixelSize: 16
+                    font.pixelSize: 13
                     font.weight: day.isToday ? Font.DemiBold : Font.Normal
                 }
             }

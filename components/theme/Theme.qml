@@ -9,6 +9,8 @@ Singleton {
     readonly property color menuBarTextColor: "#f5f5f7"
     readonly property color menuBarMutedColor: Qt.alpha(menuBarTextColor, 0.46)
     readonly property color menuBarHoverColor: Qt.alpha("white", 0.10)
+    readonly property color neutralSelectionColor: "#e6e6e9"
+    readonly property color neutralSelectionTextColor: "#171719"
     readonly property color menuBarSelectedColor: Qt.alpha("white", 0.17)
     readonly property color menuBarBorderColor: Qt.alpha("white", 0.09)
 

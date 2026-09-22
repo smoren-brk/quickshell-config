@@ -83,8 +83,8 @@ PanelWindow {
             id: leftSection
             anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
             spacing: 10
-            // Clip long workspace lists before they reach the status controls.
-            width: Math.min(implicitWidth, Math.max(0, rightSection.x - x - 16))
+            // Clip long workspace lists before they reach the centered clock.
+            width: Math.min(implicitWidth, Math.max(0, clockButton.x - x - 16))
             clip: true
 
             MenuBarButton {
@@ -104,6 +104,25 @@ PanelWindow {
 
             StatusBarWorkspaceSection {
                 outputName: root.screen.name
+            }
+        }
+
+        MenuBarButton {
+            id: clockButton
+            anchors.centerIn: parent
+            text: Qt.formatDateTime(clock.date, "HH:mm")
+            fontFamily: Typography.menuBarFontFamily
+            fontSize: 12
+            selected: root.calendarOpen
+            Accessible.role: Accessible.Button
+            Accessible.name: "Calendar"
+            onClicked: {
+                VolumeService.hide();
+                LauncherState.visible = false;
+                ControlCenterState.visible = false;
+                root.systemMenuOpen = false;
+                root.notificationsOpen = false;
+                root.calendarOpen = !root.calendarOpen;
             }
         }
 
@@ -184,22 +203,7 @@ PanelWindow {
                 }
             }
 
-            MenuBarButton {
-                text: Qt.formatDateTime(clock.date, "HH:mm")
-                fontFamily: Typography.menuBarFontFamily
-                fontSize: 12
-                selected: root.calendarOpen
-                Accessible.role: Accessible.Button
-                Accessible.name: "Calendar"
-                onClicked: {
-                    VolumeService.hide();
-                    LauncherState.visible = false;
-                    ControlCenterState.visible = false;
-                    root.systemMenuOpen = false;
-                    root.notificationsOpen = false;
-                    root.calendarOpen = !root.calendarOpen;
-                }
-            }
+
         }
     }
 
@@ -208,6 +212,21 @@ PanelWindow {
         barHeight: root.implicitHeight
         opened: root.systemMenuOpen
         onDismissed: root.systemMenuOpen = false
+        onAboutRequested: {
+            root.systemMenuOpen = false;
+            root.calendarOpen = false;
+            root.notificationsOpen = false;
+            ControlCenterState.visible = false;
+            VolumeService.hide();
+            LauncherState.visible = false;
+            AboutState.showForOutput(root.screen.name);
+        }
+    }
+
+    AboutNixOSWindow {
+        targetScreen: root.screen
+        opened: AboutState.visible && AboutState.outputName === root.screen.name
+        onDismissed: AboutState.hide()
     }
 
     CalendarWindow {

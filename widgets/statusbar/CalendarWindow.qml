@@ -32,7 +32,7 @@ PanelWindow {
 
     CalendarPanel {
         id: panel
-        anchors { top: parent.top; right: parent.right; topMargin: root.barHeight + 8; rightMargin: 8 }
+        anchors { top: parent.top; horizontalCenter: parent.horizontalCenter; topMargin: root.barHeight + 8 }
         width: Math.min(implicitWidth, root.width - 16)
         today: root.today
         focus: root.opened
