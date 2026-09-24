@@ -1,5 +1,74 @@
 .pragma library
 
+// Match searchEngines in aspects/features/apps/_qutebrowser.nix.
+var searchEngines = {
+    DEFAULT: { name: "Google", template: "https://www.google.com/search?q={}" },
+    re: { name: "Reddit", template: "https://www.reddit.com/r/{}" },
+    yt: { name: "YouTube", template: "https://www.youtube.com/results?search_query={}" },
+    "13": { name: "1337x", template: "https://1337x.to/search/{}/1/" },
+    mn: { name: "MyNixOS", template: "https://mynixos.com/search?q={}" }
+};
+
+function directUrl(query) {
+    if (!query || /\s/.test(query))
+        return "";
+    const explicit = /^https?:\/\//i.test(query);
+    try {
+        const parsed = new URL(explicit ? query : "https://" + query);
+        if (!parsed.hostname || !["http:", "https:"].includes(parsed.protocol))
+            return "";
+        if (explicit)
+            return query;
+        // Bare email addresses and other URI schemes remain search text.
+        if (parsed.username || parsed.password)
+            return "";
+        const host = parsed.hostname;
+        const typedHost = query.split(/[/?#]/)[0].replace(/:\d+$/, "");
+        const local = host === "localhost" || /^\d+\.\d+\.\d+\.\d+$/.test(typedHost)
+            || /^\[[\da-f:]+\]$/i.test(typedHost);
+        const domain = /^(?:[a-z\d\u00a1-\uffff](?:[a-z\d\u00a1-\uffff-]*[a-z\d\u00a1-\uffff])?\.)+(?:[a-z\u00a1-\uffff]{2,63}|xn--[a-z\d-]+)$/i.test(host);
+        if (!local && !domain)
+            return "";
+        return (local ? "http://" : "https://") + query;
+    } catch (_) {
+        return "";
+    }
+}
+
+function web(query) {
+    const text = String(query || "").trim();
+    if (!text || text.startsWith(">"))
+        return null;
+    const match = /^(\S+)\s+([\s\S]+)$/.exec(text);
+    const prefix = match ? match[1].toLowerCase() : "";
+    const explicitEngine = prefix !== "default" && Object.prototype.hasOwnProperty.call(searchEngines, prefix);
+    const terms = explicitEngine ? match[2].trim() : text;
+    const url = explicitEngine ? "" : directUrl(text);
+    if (url) {
+        return {
+            id: "url:" + url,
+            kind: "url",
+            name: text,
+            description: "Open in default browser",
+            url: url,
+            exclusive: true,
+            engine: "Website"
+        };
+    }
+    const engine = searchEngines[explicitEngine ? prefix : "DEFAULT"];
+    const target = engine.template.replace("{}", encodeURIComponent(terms));
+    return {
+        id: "web:" + target,
+        kind: "web",
+        name: explicitEngine && prefix === "re" ? "Open r/" + terms : "Search " + engine.name + " for “" + terms + "”",
+        description: explicitEngine && prefix === "re" ? "Reddit subreddit · Open in default browser"
+            : engine.name + " · Search in default browser",
+        url: target,
+        exclusive: explicitEngine,
+        engine: engine.name
+    };
+}
+
 function normalize(value) {
     return String(value || "").toLocaleLowerCase().trim();
 }

@@ -114,11 +114,10 @@ PanelWindow {
             onWheel: event => { event.accepted = true; }
         }
 
-        Rectangle {
+        Item {
             id: titleBar
             anchors { top: parent.top; left: parent.left; right: parent.right }
             height: 54
-            color: Theme.menuBarBackgroundColor
 
             Rectangle {
                 anchors.centerIn: parent
@@ -186,7 +185,7 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: Icons.nixos
-                        color: "#7eb8ff"
+                        color: "#72a7e8"
                         font.family: Typography.nerdIconFontFamily
                         font.pixelSize: parent.width * 0.75
                     }
@@ -285,11 +284,10 @@ PanelWindow {
 
         }
 
-        Rectangle {
+        Item {
             id: footer
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: 51
-            color: Theme.menuBarBackgroundColor
             Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.menuBarBorderColor }
             Text {
                 anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }

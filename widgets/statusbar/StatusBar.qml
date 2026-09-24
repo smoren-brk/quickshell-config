@@ -279,28 +279,24 @@ PanelWindow {
         screen: root.screen
         visible: root.notificationsOpen
         color: "transparent"
-        implicitWidth: Math.min(380, root.screen.width)
-        implicitHeight: Math.max(1, Math.min(600, root.screen.height - 64))
+        implicitWidth: Math.min(412, root.screen.width - 16)
+        implicitHeight: Math.max(1, historyPanel.desiredHeight + 32)
         exclusionMode: ExclusionMode.Ignore
         anchors { top: true; right: true }
         margins { top: root.implicitHeight + 8; right: 8 }
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
-        BackgroundEffect.blurRegion: Region { item: historyBackground; radius: historyBackground.radius }
+        BackgroundEffect.blurRegion: historyPanel.blurRegion
+        mask: historyPanel.blurRegion
         WlrLayershell.keyboardFocus: root.notificationsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-        Rectangle {
-            id: historyBackground
+        NotificationPanel {
+            id: historyPanel
             anchors.fill: parent
-            color: Theme.shellBackgroundColor
-            radius: 20
-            border.color: Theme.surfaceBorderColor
-            NotificationPanel {
-                anchors.fill: parent
-                anchors.margins: 16
-                focus: root.notificationsOpen
-                Keys.onEscapePressed: root.notificationsOpen = false
-            }
+            anchors.margins: 16
+            maximumHeight: Math.max(0, Math.floor(root.screen.height * 0.6) - 32)
+            focus: root.notificationsOpen
+            Keys.onEscapePressed: root.notificationsOpen = false
         }
     }
 
@@ -308,7 +304,7 @@ PanelWindow {
         screen: root.screen
         visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen && !root.controlCenterOpen && !root.calendarOpen
         color: "transparent"
-        implicitWidth: Math.min(380, root.screen.width)
+        implicitWidth: Math.min(412, root.screen.width - 16)
         implicitHeight: stack.desiredHeight
         exclusionMode: ExclusionMode.Ignore
         anchors { top: true; right: true }
@@ -316,11 +312,12 @@ PanelWindow {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-popups"
         BackgroundEffect.blurRegion: stack.blurRegion
-
+        mask: stack.blurRegion
         NotificationStack {
             id: stack
             anchors.fill: parent
-            maximumHeight: Math.max(1, root.screen.height - 64)
+            maximumHeight: Math.max(1, Math.floor(root.screen.height * 0.6))
+            hoverKey: root.screen.name
         }
     }
 }

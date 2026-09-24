@@ -1,96 +1,77 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import "../../components/theme"
 import "../../services"
 
 Item {
     id: root
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 10
+    property real maximumHeight: 600
+    readonly property real desiredHeight: Math.min(maximumHeight, 54 + (NotificationService.notificationCount > 0 ? list.desiredHeight : 90))
+    readonly property Region blurRegion: Region {
+        Region { item: header; radius: header.radius }
+        Region { regions: [list.blurRegion] }
+        Region { item: emptyState.visible ? emptyState : null; radius: emptyState.radius }
+    }
+
+    onVisibleChanged: if (!visible) list.reset()
+
+    Rectangle {
+        id: header
+        width: parent.width
+        height: 40
+        radius: 14
+        color: Theme.notificationCardColor
+        border.color: Theme.notificationBorderColor
 
         RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 30
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 8
 
             Text {
-                text: "Notifications"
-                color: Theme.primaryTextColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: 18
-                font.weight: Font.DemiBold
                 Layout.fillWidth: true
+                text: "Notifications"
+                color: Theme.menuBarTextColor
+                font.family: Typography.menuBarFontFamily
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
             }
 
-            Text {
+            NotificationButton {
                 visible: NotificationService.notificationCount > 0
                 text: "Clear all"
-                color: clearHover.hovered
-                    ? Theme.accentHoverColor
-                    : Theme.mutedTextColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: 14
-
-                HoverHandler {
-                    id: clearHover
-                    cursorShape: Qt.PointingHandCursor
-                }
-                TapHandler { onTapped: NotificationService.clear() }
+                onClicked: NotificationService.clear()
             }
         }
+    }
 
-        ListView {
-            id: list
+    NotificationList {
+        id: list
+        y: 54
+        width: parent.width
+        height: Math.max(0, parent.height - y)
+        maximumHeight: Math.max(0, root.maximumHeight - y)
+        groups: NotificationService.notificationGroups
+    }
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            model: NotificationService.notificationModel
-            spacing: 20
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
+    Rectangle {
+        id: emptyState
+        y: 54
+        width: parent.width
+        height: 90
+        visible: NotificationService.notificationCount === 0
+        radius: 14
+        color: Theme.notificationCardColor
+        border.color: Theme.notificationBorderColor
 
-            add: Transition {
-                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 160 }
-            }
-
-            delegate: Item {
-                id: delegateRoot
-
-                required property var notification
-                required property int notificationId
-                required property string appName
-                required property string summary
-                required property string body
-                required property string icon
-                required property var receivedAt
-
-                width: list.width
-                height: card.implicitHeight
-
-                NotificationCard {
-                    id: card
-                    anchors.fill: parent
-                    notificationId: delegateRoot.notificationId
-                    appName: delegateRoot.appName
-                    summary: delegateRoot.summary
-                    body: delegateRoot.body
-                    iconSource: delegateRoot.icon
-                    receivedAt: delegateRoot.receivedAt
-                    popup: false
-                    onCloseRequested: notificationId =>
-                        NotificationService.dismissById(notificationId)
-                }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                visible: NotificationService.notificationCount === 0
-                text: "No notifications"
-                color: Theme.mutedTextColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: 15
-            }
+        Text {
+            anchors.centerIn: parent
+            text: "No notifications"
+            color: Theme.notificationLabelColor
+            font.family: Typography.menuBarFontFamily
+            font.pixelSize: 13
         }
     }
 }

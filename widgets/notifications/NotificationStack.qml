@@ -1,87 +1,32 @@
 import QtQuick
 import Quickshell
-import "../../components/theme"
 import "../../services"
 
 Item {
     id: root
 
     property real maximumHeight: 600
-    readonly property Region blurRegion: Region {
-        Region {
-            regions: Array.from(list.contentItem.children)
-                .map(child => child.blurRegion || null).filter(region => region !== null)
-        }
-        Region { item: list; intersection: Intersection.Intersect }
-    }
+    property string hoverKey: "popups"
     readonly property real desiredHeight: NotificationService.popupNotificationCount > 0
-        ? Math.min(maximumHeight, list.contentHeight + 32)
-        : 1
+        ? Math.min(maximumHeight, list.desiredHeight + 32) : 1
+    readonly property Region blurRegion: list.blurRegion
 
-    ListView {
+    onVisibleChanged: if (!visible) {
+        NotificationService.holdPopups(hoverKey, false);
+        list.reset();
+    }
+    Component.onDestruction: NotificationService.holdPopups(hoverKey, false)
+
+    NotificationList {
         id: list
+        anchors.fill: parent
+        anchors.margins: 16
+        maximumHeight: Math.max(0, root.maximumHeight - 32)
+        groups: NotificationService.popupGroups
+        popup: true
+    }
 
-        anchors {
-            fill: parent
-            topMargin: 16
-            rightMargin: 16
-            bottomMargin: 16
-            leftMargin: 16
-        }
-        model: NotificationService.popupNotificationModel
-        spacing: 8
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-
-        onCountChanged: if (count > 0) positionViewAtEnd()
-
-        remove: Transition {
-            NumberAnimation {
-                property: "slideOffset"
-                from: 0
-                to: list.width
-                duration: 240
-                easing.type: Easing.InCubic
-            }
-        }
-
-        displaced: Transition {
-            NumberAnimation {
-                property: "y"
-                duration: 220
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        delegate: Item {
-            id: delegateRoot
-
-            required property int notificationId
-            required property string appName
-            required property string summary
-            required property string body
-            required property string icon
-            required property var receivedAt
-            property real slideOffset: 0
-            readonly property Region blurRegion: Region { item: card; radius: card.radius }
-
-            width: list.width
-            height: card.implicitHeight
-            transform: Translate { x: delegateRoot.slideOffset }
-
-            NotificationCard {
-                id: card
-                anchors.fill: parent
-                notificationId: delegateRoot.notificationId
-                appName: delegateRoot.appName
-                summary: delegateRoot.summary
-                body: delegateRoot.body
-                iconSource: delegateRoot.icon
-                receivedAt: delegateRoot.receivedAt
-                popup: true
-                onCloseRequested: notificationId =>
-                    NotificationService.removePopupById(notificationId)
-            }
-        }
+    HoverHandler {
+        onHoveredChanged: NotificationService.holdPopups(root.hoverKey, hovered && root.visible)
     }
 }

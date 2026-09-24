@@ -101,7 +101,7 @@ Rectangle {
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(1, root.level * 16 - index))
                             height: parent.height
-                            color: "#ffffff"
+                            color: "#efeff1"
                         }
                     }
                 }

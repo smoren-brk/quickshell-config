@@ -1,189 +1,186 @@
+import Quickshell
 import Quickshell.Widgets
 import QtQuick
 import QtQuick.Layouts
 import "../../components/theme"
+import "../../services"
 
 Rectangle {
     id: root
 
-    required property int notificationId
-    required property string appName
-    required property string summary
-    required property string body
-    required property string iconSource
-    required property var receivedAt
-    property bool popup: false
-    property real slideOffset: popup ? width : 0
+    required property var record
+    property int groupCount: 1
+    property bool groupExpanded: false
+    readonly property var actions: record ? record.actions.filter(action => action.identifier !== "default") : []
+    readonly property bool hasDefaultAction: record ? record.actions.some(action => action.identifier === "default") : false
 
-    signal closeRequested(int notificationId)
+    signal expansionRequested()
 
-    implicitHeight: Math.ceil(Math.max(popup ? 98 : 76,
-        content.implicitHeight + (popup ? 30 : 24)))
-    radius: popup ? 12 : 14
-    color: popup ? Theme.windowSurfaceColor : Theme.panelSurfaceColor
-    clip: popup
-    transform: Translate { x: root.slideOffset }
+    implicitHeight: content.implicitHeight + 24
+    radius: 14
+    color: Theme.notificationCardColor
+    border.color: Theme.notificationBorderColor
 
-    Component.onCompleted: {
-        if (popup)
-            enterAnimation.start();
+    SystemClock { id: clock; precision: SystemClock.Minutes }
+
+    function timeLabel(): string {
+        if (!record)
+            return "";
+        const received = new Date(record.receivedAt);
+        const now = clock.date;
+        if (now.getTime() - received.getTime() < 60000)
+            return "now";
+        if (now.toDateString() === received.toDateString())
+            return Qt.formatTime(received, "HH:mm");
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return (yesterday.toDateString() === received.toDateString() ? "Yesterday" : Qt.formatDate(received, "MMM d"))
+            + ", " + Qt.formatTime(received, "HH:mm");
     }
 
-    NumberAnimation {
-        id: enterAnimation
-        target: root
-        property: "slideOffset"
-        to: 0
-        duration: 240
-        easing.type: Easing.OutCubic
+    // Keep the body target separate from action and group buttons.
+    MouseArea {
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: content.y + message.y + message.height
+        enabled: root.groupCount > 1 && !root.groupExpanded || root.hasDefaultAction
+        cursorShape: Qt.PointingHandCursor
+        onClicked: {
+            if (root.groupCount > 1 && !root.groupExpanded)
+                root.expansionRequested();
+            else
+                NotificationService.invokeAction(root.record.notificationId, "default");
+        }
     }
 
-    RowLayout {
+    Column {
         id: content
+        x: 14
+        y: 12
+        width: Math.max(0, root.width - 28)
+        spacing: 8
 
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-            topMargin: root.popup ? 14 : 12
-            rightMargin: root.popup ? 42 : 36
-            leftMargin: root.popup ? 14 : 12
-        }
-        height: implicitHeight
-        spacing: root.popup ? 13 : 10
+        RowLayout {
+            width: parent.width
+            height: 20
+            spacing: 7
 
-        ClippingRectangle {
-            Layout.preferredWidth: root.popup ? 52 : 38
-            Layout.preferredHeight: root.popup ? 52 : 38
-            Layout.alignment: root.popup ? Qt.AlignVCenter : Qt.AlignTop
-            radius: root.popup ? 16 : 10
-            color: Theme.selectedSurfaceColor
+            Rectangle {
+                Layout.preferredWidth: 18
+                Layout.preferredHeight: 18
+                radius: 4
+                color: Theme.notificationIconColor
 
-            IconImage {
-                anchors.fill: parent
-                anchors.margins: root.popup ? 9 : 7
-                source: root.iconSource
-                visible: root.iconSource !== ""
-            }
+                IconImage {
+                    id: appIcon
+                    anchors.fill: parent
+                    source: root.record ? root.record.icon : ""
+                    visible: root.record !== null && root.record.icon !== "" && status !== Image.Error
+                }
 
-            Text {
-                anchors.centerIn: parent
-                visible: root.iconSource === ""
-                text: Icons.notifications
-                color: Theme.accentHoverColor
-                font.family: Typography.nerdIconFontFamily
-                font.pixelSize: root.popup ? 23 : 17
-            }
-        }
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.alignment: root.popup ? Qt.AlignVCenter : Qt.AlignTop
-            spacing: root.popup ? 3 : 2
-
-            Text {
-                Layout.fillWidth: true
-                visible: root.popup
-                text: root.appName
-                color: Theme.accentHoverColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.letterSpacing: 0.4
-                elide: Text.ElideRight
+                Text {
+                    anchors.centerIn: parent
+                    visible: !appIcon.visible
+                    text: Icons.notifications
+                    color: Theme.notificationLabelColor
+                    font.family: Typography.nerdIconFontFamily
+                    font.pixelSize: 13
+                }
             }
 
             Text {
                 Layout.fillWidth: true
-                text: root.summary
-                color: Theme.primaryTextColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: root.popup ? 17 : 16
-                font.weight: Font.DemiBold
-                elide: Text.ElideRight
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: root.body !== ""
-                text: root.body
+                text: root.record ? root.record.appName.toUpperCase() : ""
                 textFormat: Text.PlainText
-                color: Theme.mutedTextColor
-                font.family: Typography.bodyFontFamily
+                color: Theme.notificationLabelColor
+                font.family: Typography.menuBarFontFamily
+                font.pixelSize: 11
+                font.letterSpacing: 0.3
+                elide: Text.ElideRight
+            }
+
+            Text {
+                text: root.timeLabel()
+                color: Theme.notificationLabelColor
+                opacity: 0.8
+                font.family: Typography.menuBarFontFamily
+                font.pixelSize: 10
+            }
+
+            NotificationButton {
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                text: "×"
+                font.pixelSize: 16
+                padding: 0
+                leftPadding: 0
+                rightPadding: 0
+                Accessible.name: "Dismiss notification"
+                background: Rectangle {
+                    radius: 10
+                    color: parent.hovered || parent.visualFocus ? Theme.menuBarSelectedColor : "transparent"
+                }
+                onClicked: NotificationService.dismissById(root.record.notificationId)
+            }
+        }
+
+        Column {
+            id: message
+            width: parent.width
+            spacing: 2
+
+            Text {
+                width: parent.width
+                text: root.record ? root.record.summary : ""
+                textFormat: Text.PlainText
+                color: Theme.menuBarTextColor
+                font.family: Typography.menuBarFontFamily
                 font.pixelSize: 14
+                font.weight: Font.DemiBold
                 wrapMode: Text.Wrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
             }
 
             Text {
-                visible: !root.popup
-                text: root.appName + "  •  " + Qt.formatTime(root.receivedAt, "hh:mm")
-                color: Theme.secondaryTextColor
-                font.family: Typography.bodyFontFamily
-                font.pixelSize: 12
+                width: parent.width
+                visible: text !== ""
+                text: root.record ? root.record.body : ""
+                textFormat: Text.PlainText
+                color: Theme.menuBarTextColor
+                font.family: Typography.menuBarFontFamily
+                font.pixelSize: 13
+                wrapMode: Text.Wrap
+                maximumLineCount: 3
+                elide: Text.ElideRight
             }
         }
-    }
 
-    Rectangle {
-        anchors {
-            top: parent.top
-            right: parent.right
-            topMargin: root.popup ? 10 : 12
-            rightMargin: root.popup ? 10 : 12
-        }
-        width: root.popup ? 25 : 15
-        height: root.popup ? 25 : 15
-        radius: root.popup ? 9 : 0
-        color: root.popup && closeHover.hovered
-            ? Theme.surfaceBorderColor
-            : Qt.rgba(0, 0, 0, 0)
+        GridLayout {
+            width: parent.width
+            visible: root.actions.length > 0
+            columns: 2
+            rowSpacing: 6
+            columnSpacing: 8
 
-        Text {
-            anchors.centerIn: parent
-            text: Icons.close
-            color: closeHover.hovered
-                ? Theme.accentHoverColor
-                : Theme.mutedTextColor
-            font.family: Typography.nerdIconFontFamily
-            font.pixelSize: root.popup ? 14 : 15
+            Repeater {
+                model: root.actions
+                NotificationButton {
+                    required property var modelData
+                    required property int index
+                    Layout.fillWidth: true
+                    Layout.preferredWidth: 1
+                    Layout.columnSpan: root.actions.length % 2 === 1 && index === root.actions.length - 1 ? 2 : 1
+                    text: modelData.text
+                    onClicked: NotificationService.invokeAction(root.record.notificationId, modelData.identifier)
+                }
+            }
         }
 
-        HoverHandler {
-            id: closeHover
-            cursorShape: Qt.PointingHandCursor
+        NotificationButton {
+            width: parent.width
+            visible: root.groupCount > 1
+            text: root.groupExpanded ? "Show less" : (root.groupCount - 1) + " more notification" + (root.groupCount === 2 ? "" : "s")
+            onClicked: root.expansionRequested()
         }
-        TapHandler {
-            onTapped: root.closeRequested(root.notificationId)
-        }
-    }
-
-    Rectangle {
-        anchors {
-            bottom: parent.bottom
-            left: parent.left
-            bottomMargin: 6
-            leftMargin: 12
-        }
-        visible: root.popup
-        width: parent.width - 24
-        height: 3
-        radius: height / 2
-        color: Theme.accentHoverColor
-
-        NumberAnimation on width {
-            running: root.popup
-            from: root.width - 24
-            to: 0
-            duration: ShellMetrics.popupTimeoutMs
-            easing.type: Easing.Linear
-        }
-    }
-
-    Timer {
-        interval: ShellMetrics.popupTimeoutMs
-        running: root.popup
-        onTriggered: root.closeRequested(root.notificationId)
     }
 }
