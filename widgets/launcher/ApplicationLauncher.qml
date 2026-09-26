@@ -24,8 +24,6 @@ Item {
 
     readonly property string query: searchInput.text.trim()
     readonly property bool commandMode: query.startsWith(">")
-    readonly property var webResult: Search.web(query)
-    readonly property bool webMode: webResult !== null && webResult.exclusive
     readonly property string contentQuery: commandMode ? query.slice(1).trim() : query
     readonly property bool showingResults: query.length > 0 || browsing
     readonly property int rowHeight: 56
@@ -35,15 +33,11 @@ Item {
     readonly property var searchResults: {
         if (!shown || !showingResults)
             return [];
-        if (webMode)
-            return [webResult];
         const apps = commandMode ? [] : Search.applications(DesktopEntries.applications.values, query);
         const commands = query ? Search.executables(executableIndex.entries, contentQuery) : [];
-        const localResults = apps.concat(commands).sort((first, second) => second.score - first.score || (first.kind === second.kind ? 0 : first.kind === "app" ? -1 : 1) || first.name.localeCompare(second.name));
-        return webResult ? localResults.concat([webResult]) : localResults;
+        return apps.concat(commands).sort((first, second) => second.score - first.score || (first.kind === second.kind ? 0 : first.kind === "app" ? -1 : 1) || first.name.localeCompare(second.name));
     }
-    readonly property string statusText: webMode ? webResult.engine + " · Open in default browser"
-        : executableIndex.error || (executableIndex.busy ? "Reading executables…" : commandMode ? "Executables · " + results.length : results.length + " results")
+    readonly property string statusText: executableIndex.error || (executableIndex.busy ? "Reading executables…" : commandMode ? "Executables · " + results.length : results.length + " results")
 
     signal closeRequested
 
@@ -83,24 +77,9 @@ Item {
                 command: result.command,
                 workingDirectory: Quickshell.env("HOME")
             });
-        } else if (result.kind === "web" || result.kind === "url") {
-            openWeb(result);
-            return;
         } else {
             return;
         }
-        closeRequested();
-    }
-
-    function openWeb(result: var): void {
-        if (!shown || !result)
-            return;
-        // The session portal may be unavailable. Let xdg-open resolve the
-        // default browser directly, overriding NixOS's forced portal routing.
-        Quickshell.execDetached({
-            command: ["xdg-open", result.url],
-            environment: { "NIXOS_XDG_OPEN_USE_PORTAL": "" }
-        });
         closeRequested();
     }
 
@@ -142,7 +121,7 @@ Item {
             anchors.margins: 1
             radius: 15
             color: "transparent"
-            border.color: Qt.alpha("black", 0.18)
+            border.color: Qt.alpha(Theme.mochaBase, 0.18)
         }
     }
 
@@ -158,7 +137,7 @@ Item {
             anchors.leftMargin: 22
             anchors.verticalCenter: parent.verticalCenter
             width: 24
-            text: root.commandMode ? "" : root.webMode ? "" : ""
+            text: root.commandMode ? "" : ""
             color: Theme.spotlightSecondaryTextColor
             font.family: Typography.nerdIconFontFamily
             font.pixelSize: 22
@@ -183,7 +162,7 @@ Item {
             selectByMouse: true
             clip: true
             focus: true
-            Accessible.name: "Search applications, executables, and the web"
+            Accessible.name: "Search applications and executables"
 
             Keys.priority: Keys.BeforeItem
             Keys.onPressed: event => {
@@ -194,10 +173,7 @@ Item {
                 } else if (event.key === Qt.Key_Up || event.key === Qt.Key_Backtab) {
                     root.moveSelection(-1);
                 } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                    if (event.modifiers & Qt.ControlModifier && !root.commandMode)
-                        root.openWeb(root.webResult);
-                    else
-                        root.activate(root.selectedIndex);
+                    root.activate(root.selectedIndex);
                 } else if (event.key === Qt.Key_Escape) {
                     root.closeRequested();
                 } else {
@@ -212,7 +188,7 @@ Item {
                 anchors.fill: parent
                 verticalAlignment: Text.AlignVCenter
                 visible: searchInput.text.length === 0 && searchInput.preeditText.length === 0
-                text: "Search apps, commands, and the web…"
+                text: "Search apps and commands…"
                 color: Theme.spotlightSecondaryTextColor
                 font: searchInput.font
                 elide: Text.ElideRight
@@ -259,7 +235,7 @@ Item {
         visible: !root.showingResults
         width: Math.max(0, parent.width - 32)
         horizontalAlignment: Text.AlignHCenter
-        text: "↓ apps     > executables     yt / re / mn / 13 + query     Ctrl+↵ web"
+        text: "↓ apps     > executables"
         color: Theme.spotlightSecondaryTextColor
         font.family: Typography.menuBarFontFamily
         font.pixelSize: 11
@@ -364,7 +340,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 11
             text: root.statusText
-            color: !root.webMode && executableIndex.error ? Theme.dangerColor : Theme.spotlightSecondaryTextColor
+            color: executableIndex.error ? Theme.dangerColor : Theme.spotlightSecondaryTextColor
             font.family: Typography.menuBarFontFamily
             font.pixelSize: 10
             elide: Text.ElideRight
@@ -377,7 +353,7 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 10
             visible: root.width > 440
-            text: root.commandMode ? "↑ ↓ select    ↵ launch" : "↑ ↓ select    ↵ open    Ctrl+↵ web"
+            text: "↑ ↓ select    ↵ launch"
             color: Theme.spotlightSecondaryTextColor
             font.family: Typography.menuBarFontFamily
             font.pixelSize: 11

@@ -33,8 +33,7 @@ Item {
 
             Text {
                 anchors.centerIn: parent
-                text: root.result.kind === "executable" ? ""
-                    : root.result.kind === "web" || root.result.kind === "url" ? "" : ""
+                text: root.result.kind === "executable" ? "" : ""
                 color: Theme.menuBarTextColor
                 font.family: Typography.nerdIconFontFamily
                 font.pixelSize: 19
@@ -73,7 +72,7 @@ Item {
             width: parent.width
             text: root.result.description
             textFormat: Text.PlainText
-            color: root.selected ? "#d4dbe9" : Theme.spotlightSecondaryTextColor
+            color: root.selected ? Theme.menuBarTextColor : Theme.spotlightSecondaryTextColor
             font.family: Typography.menuBarFontFamily
             font.pixelSize: 11
             elide: Text.ElideRight

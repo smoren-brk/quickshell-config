@@ -86,7 +86,7 @@ Rectangle {
             height: 10
             color: Qt.alpha(root.ink, 0.14)
             border.width: meter.visualFocus ? 1 : 0
-            border.color: "white"
+            border.color: Theme.menuBarTextColor
 
             Row {
                 anchors.fill: parent
@@ -101,7 +101,7 @@ Rectangle {
                         Rectangle {
                             width: parent.width * Math.max(0, Math.min(1, root.level * 16 - index))
                             height: parent.height
-                            color: "#efeff1"
+                            color: Theme.accentColor
                         }
                     }
                 }
