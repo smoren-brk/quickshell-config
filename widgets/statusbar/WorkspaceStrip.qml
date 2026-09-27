@@ -34,7 +34,7 @@ Item {
                     height: 5
                     radius: height / 2
                     color: workspace.modelData.isUrgent ? Theme.dangerColor
-                        : workspace.modelData.isActive ? Theme.menuBarTextColor
+                        : workspace.modelData.isActive ? Theme.accentColor
                         : workspace.modelData.activeWindowId > 0
                             ? Qt.alpha(Theme.menuBarTextColor, 0.65) : Theme.menuBarMutedColor
 
