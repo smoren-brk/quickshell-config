@@ -62,6 +62,7 @@ PanelWindow {
             MenuEntry {
                 text: "Restart…"
                 command: ["systemctl", "reboot"]
+                dangerConfirmation: true
                 confirmationLabel: "Restart"
                 confirmationQuestion: "Are you sure you want to restart your computer?"
                 confirmationDetail: "Save your work before restarting."
@@ -69,6 +70,7 @@ PanelWindow {
             MenuEntry {
                 text: "Shut Down…"
                 command: ["systemctl", "poweroff"]
+                dangerConfirmation: true
                 confirmationLabel: "Shut Down"
                 confirmationQuestion: "Are you sure you want to shut down your computer?"
                 confirmationDetail: "Save your work before shutting down."
@@ -146,6 +148,7 @@ PanelWindow {
                 DialogButton {
                     text: root.pendingAction ? root.pendingAction.label : ""
                     primary: true
+                    danger: root.pendingAction ? root.pendingAction.danger : false
                     width: parent.width
                     onClicked: {
                         if (!root.pendingAction)
@@ -162,6 +165,7 @@ PanelWindow {
     component DialogButton: Button {
         id: button
         property bool primary: false
+        property bool danger: false
         height: 36
         hoverEnabled: true
         contentItem: Text {
@@ -174,10 +178,10 @@ PanelWindow {
         }
         background: Rectangle {
             radius: 7
-            color: button.primary ? Theme.neutralSelectionColor
+            color: button.primary ? (button.danger ? Theme.dangerColor : Theme.neutralSelectionColor)
                 : button.hovered || button.down ? Theme.menuBarSelectedColor : Theme.menuBarHoverColor
             border.width: button.activeFocus ? 2 : 1
-            border.color: button.activeFocus ? Theme.neutralSelectionColor : Theme.menuBarBorderColor
+            border.color: button.activeFocus ? (button.danger ? Theme.dangerColor : Theme.neutralSelectionColor) : Theme.menuBarBorderColor
         }
     }
 
@@ -185,6 +189,7 @@ PanelWindow {
         id: entry
         property var command: []
         property bool opensAbout: false
+        property bool dangerConfirmation: false
         property string confirmationLabel: ""
         property string confirmationQuestion: ""
         property string confirmationDetail: ""
@@ -202,6 +207,7 @@ PanelWindow {
                     label: confirmationLabel,
                     question: confirmationQuestion,
                     detail: confirmationDetail,
+                    danger: dangerConfirmation,
                     command: command.slice()
                 };
                 return;
