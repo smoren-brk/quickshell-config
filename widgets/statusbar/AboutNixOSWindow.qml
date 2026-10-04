@@ -9,42 +9,23 @@ PanelWindow {
 
     required property var targetScreen
     property bool opened: false
-    property bool queried: false
     property int selectedTab: 0
     property var system: ({})
     property string error: ""
     signal dismissed()
 
     readonly property var tabs: ["Overview", "Displays", "Storage"]
-    readonly property var displays: system.Display || []
-    readonly property var disks: system.Disk || []
-    readonly property var gpus: system.GPU || []
-    readonly property var os: system.OS || ({})
-    readonly property var cpu: system.CPU || ({})
-    readonly property var memory: system.Memory || ({})
-    readonly property var packages: system.Packages || ({})
-    readonly property var host: system.Host || ({})
-    readonly property var kernel: system.Kernel || ({})
-    readonly property var uptime: system.Uptime || ({})
-
-    function readModules(output) {
-        const modules = {};
-        const entries = JSON.parse(output);
-        for (const entry of entries) {
-            if (entry.result !== undefined)
-                modules[entry.type] = entry.result;
-        }
-        return modules;
-    }
+    readonly property var displays: Quickshell.screens
+    readonly property var disks: system.disks || []
 
     function gib(bytes) {
         return Number.isFinite(bytes) ? (bytes / 1073741824).toFixed(1) + " GiB" : "Unknown";
     }
 
-    function duration(milliseconds) {
-        if (!Number.isFinite(milliseconds))
+    function duration(seconds) {
+        if (!Number.isFinite(seconds))
             return "Unknown";
-        const minutes = Math.floor(milliseconds / 60000);
+        const minutes = Math.floor(seconds / 60);
         const days = Math.floor(minutes / 1440);
         const hours = Math.floor((minutes % 1440) / 60);
         return (days ? days + "d " : "") + hours + "h " + (minutes % 60) + "m";
@@ -53,10 +34,8 @@ PanelWindow {
     onOpenedChanged: {
         if (opened) {
             selectedTab = 0;
-            if (!queried) {
-                queried = true;
+            if (!systemReader.running)
                 systemReader.running = true;
-            }
         }
     }
     onBackingWindowVisibleChanged: if (backingWindowVisible)
@@ -64,19 +43,19 @@ PanelWindow {
 
     Process {
         id: systemReader
-        command: ["fastfetch", "--json"]
+        command: ["python3", decodeURIComponent(Qt.resolvedUrl("system-info.py").toString().replace(/^file:\/\//, ""))]
         stdout: StdioCollector { id: systemOutput }
         stderr: StdioCollector {}
         onExited: code => {
             if (code !== 0) {
-                root.error = "Could not read system information from fastfetch.";
+                root.error = "Could not read system information.";
                 return;
             }
             try {
-                root.system = root.readModules(systemOutput.text);
+                root.system = JSON.parse(systemOutput.text);
                 root.error = "";
             } catch (_) {
-                root.error = "Could not parse fastfetch output.";
+                root.error = "Could not parse system information.";
             }
         }
     }
@@ -203,19 +182,17 @@ PanelWindow {
                         font.weight: Font.DemiBold
                     }
                     Text {
-                        text: root.os.prettyName || "Loading system information…"
+                        text: root.system.os || (systemReader.running ? "Loading system information…" : "System information unavailable")
                         color: Theme.secondaryTextColor
                         font.family: Typography.menuBarFontFamily
                         font.pixelSize: 14
                     }
                     Item { width: 1; height: 16 }
-                    InfoRow { label: "Computer"; value: (root.host.vendor || "") + " " + (root.host.name || "Unknown") }
-                    InfoRow { label: "Processor"; value: root.cpu.cpu || "Unknown" }
-                    InfoRow { label: "Graphics"; value: root.gpus.map(gpu => gpu.name).join(", ") || "Unknown" }
-                    InfoRow { label: "Memory"; value: root.gib(root.memory.total) }
-                    InfoRow { label: "Packages"; value: root.packages.all !== undefined ? String(root.packages.all) : "Unknown" }
-                    InfoRow { label: "Kernel"; value: root.kernel.release || "Unknown" }
-                    InfoRow { label: "Uptime"; value: root.duration(root.uptime.uptime) }
+                    InfoRow { label: "Computer"; value: root.system.host || "Unknown" }
+                    InfoRow { label: "Processor"; value: root.system.cpu || "Unknown" }
+                    InfoRow { label: "Memory"; value: root.gib(root.system.memory) }
+                    InfoRow { label: "Kernel"; value: root.system.kernel || "Unknown" }
+                    InfoRow { label: "Uptime"; value: root.duration(root.system.uptime) }
                 }
             }
 
@@ -233,7 +210,7 @@ PanelWindow {
                     SectionTitle { text: "Connected displays" }
                     Text {
                         visible: root.displays.length === 0
-                        text: "No displays reported by fastfetch."
+                        text: "No connected displays."
                         color: Theme.secondaryTextColor
                         font.family: Typography.menuBarFontFamily
                     }
@@ -241,10 +218,9 @@ PanelWindow {
                         model: root.displays
                         delegate: DetailCard {
                             required property var modelData
-                            title: modelData.name || "Display"
-                            subtitle: modelData.output ? modelData.output.width + " × " + modelData.output.height
-                                + "  ·  " + Number(modelData.output.refreshRate).toFixed(0) + " Hz" : "Unknown resolution"
-                            detail: [modelData.type, modelData.physical ? modelData.physical.width + " × " + modelData.physical.height + " mm" : "", modelData.hdrStatus === "Supported" ? "HDR supported" : ""].filter(Boolean).join("  ·  ")
+                            title: modelData.model || modelData.name || "Display"
+                            subtitle: modelData.width + " × " + modelData.height + " logical pixels"
+                            detail: modelData.name + "  ·  " + Math.round(modelData.devicePixelRatio * 100) + "% scale"
                         }
                     }
                 }
@@ -264,7 +240,7 @@ PanelWindow {
                     SectionTitle { text: "Mounted storage" }
                     Text {
                         visible: root.disks.length === 0
-                        text: "No mounted storage reported by fastfetch."
+                        text: "No mounted storage found."
                         color: Theme.secondaryTextColor
                         font.family: Typography.menuBarFontFamily
                     }
@@ -272,10 +248,10 @@ PanelWindow {
                         model: root.disks
                         delegate: DetailCard {
                             required property var modelData
-                            title: (modelData.name || modelData.mountFrom || "Disk") + "  ·  " + modelData.mountpoint
-                            subtitle: modelData.bytes ? root.gib(modelData.bytes.used) + " used of " + root.gib(modelData.bytes.total) : "Capacity unknown"
-                            detail: [modelData.filesystem, modelData.mountFrom, (modelData.volumeType || []).join(", ")].filter(Boolean).join("  ·  ")
-                            progress: modelData.bytes && modelData.bytes.total ? modelData.bytes.used / modelData.bytes.total : 0
+                            title: modelData.source + "  ·  " + modelData.mountpoint
+                            subtitle: root.gib(modelData.used) + " used of " + root.gib(modelData.total)
+                            detail: modelData.filesystem
+                            progress: modelData.total ? modelData.used / modelData.total : 0
                             showProgress: true
                         }
                     }
@@ -291,7 +267,7 @@ PanelWindow {
             Rectangle { anchors.top: parent.top; width: parent.width; height: 1; color: Theme.menuBarBorderColor }
             Text {
                 anchors { left: parent.left; leftMargin: 24; verticalCenter: parent.verticalCenter }
-                text: root.error || (root.os.buildID ? "Build " + root.os.buildID : "System information from fastfetch")
+                text: root.error || (root.system.build ? "Build " + root.system.build : "System information")
                 color: root.error ? Theme.dangerColor : Theme.secondaryTextColor
                 font.family: Typography.menuBarFontFamily
                 font.pixelSize: 11
