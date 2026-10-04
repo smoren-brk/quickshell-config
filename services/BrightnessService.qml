@@ -8,8 +8,9 @@ Singleton {
     property var monitors: []
     property string error: ""
     property bool active: false
+    property bool available: false
     property var pending: ({})
-    readonly property bool busy: reader.running || setter.running
+    readonly property bool busy: availabilityCheck.running || reader.running || setter.running
 
     function parseInfo(output: string): var {
         const result = [];
@@ -34,11 +35,11 @@ Singleton {
 
     function refresh(): void {
         if (!busy && Object.keys(pending).length === 0)
-            reader.running = true;
+            availabilityCheck.running = true;
     }
 
     function setBrightness(id: int, value: real): void {
-        if (!monitors.some(monitor => monitor.id === id))
+        if (!available || !monitors.some(monitor => monitor.id === id))
             return;
         const next = Object.assign({}, pending);
         next[id] = Math.round(Math.max(0, Math.min(100, value)));
@@ -47,6 +48,10 @@ Singleton {
     }
 
     function writeNext(): void {
+        if (!available) {
+            pending = {};
+            return;
+        }
         if (busy) {
             writeTimer.restart();
             return;
@@ -66,6 +71,23 @@ Singleton {
     }
 
     onActiveChanged: if (active) refresh()
+
+    Process {
+        id: availabilityCheck
+        command: ["sh", "-c", "command -v raito >/dev/null 2>&1"]
+        running: true
+        onExited: code => {
+            root.available = code === 0;
+            if (!root.available) {
+                root.monitors = [];
+                root.pending = {};
+                root.error = "";
+                writeTimer.stop();
+            } else if (root.active) {
+                reader.running = true;
+            }
+        }
+    }
 
     Process {
         id: reader
@@ -99,7 +121,7 @@ Singleton {
     }
     Timer {
         interval: 5000
-        running: root.active
+        running: root.active && root.available
         repeat: true
         onTriggered: root.refresh()
     }

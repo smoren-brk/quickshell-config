@@ -41,6 +41,7 @@ ColumnLayout {
     }
 
     Rectangle {
+        visible: BrightnessService.available
         Layout.fillWidth: true
         implicitHeight: brightnessPanel.implicitHeight + 24
         radius: 14
