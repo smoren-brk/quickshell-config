@@ -6,7 +6,7 @@ import Quickshell
 Singleton {
     // Catppuccin Mocha palette.
     readonly property color mochaRed: "#f38ba8"
-    readonly property color mochaGreen: "#a6e3a1"
+    readonly property color mochaGreen: "#94e2d5"
     readonly property color mochaBlue: "#89b4fa"
     readonly property color mochaText: "#cdd6f4"
     readonly property color mochaSubtext1: "#bac2de"
