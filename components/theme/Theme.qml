@@ -49,6 +49,6 @@ Singleton {
     readonly property color notificationLabelColor: mochaSubtext1
     readonly property color secondaryTextColor: mochaSubtext0
     readonly property color surfaceBorderColor: mochaSurface2
-    readonly property color accentColor: mochaGreen
+    readonly property color accentColor: mochaRed
     readonly property color dangerColor: mochaRed
 }

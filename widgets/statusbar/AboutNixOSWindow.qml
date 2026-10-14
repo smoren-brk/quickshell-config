@@ -164,7 +164,7 @@ PanelWindow {
                     Text {
                         anchors.centerIn: parent
                         text: Icons.nixos
-                        color: Theme.mochaBlue
+                        color: Theme.accentColor
                         font.family: Typography.nerdIconFontFamily
                         font.pixelSize: parent.width * 0.75
                     }
