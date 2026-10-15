@@ -121,7 +121,7 @@ Item {
             anchors.margins: 1
             radius: 15
             color: "transparent"
-            border.color: Qt.alpha(Theme.mochaBase, 0.18)
+            border.color: Qt.alpha(Theme.nightBase, 0.18)
         }
     }
 

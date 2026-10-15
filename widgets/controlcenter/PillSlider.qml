@@ -20,7 +20,7 @@ Slider {
         width: root.width
         height: root.height
         radius: height / 2
-        color: Qt.alpha(Theme.mochaSurface2, 0.35)
+        color: Qt.alpha(Theme.nightSurface2, 0.35)
         border.width: root.visualFocus ? 1 : 0
         border.color: Theme.menuBarTextColor
 
@@ -28,7 +28,7 @@ Slider {
             width: thumb.x + thumb.width
             height: parent.height
             radius: parent.radius
-            color: root.muted ? Theme.mochaOverlay1 : Theme.accentColor
+            color: root.muted ? Theme.nightOverlay1 : Theme.accentColor
         }
     }
 
@@ -38,8 +38,8 @@ Slider {
         width: root.height
         height: root.height
         radius: height / 2
-        color: Theme.mochaText
-        border.color: Qt.alpha(Theme.mochaBase, 0.12)
+        color: Theme.nightText
+        border.color: Qt.alpha(Theme.nightBase, 0.12)
     }
 
     Text {
@@ -48,6 +48,6 @@ Slider {
         text: root.symbol
         font.family: Typography.nerdIconFontFamily
         font.pixelSize: 14
-        color: Theme.mochaBase
+        color: Theme.nightBase
     }
 }
