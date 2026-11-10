@@ -4,16 +4,18 @@ import QtQuick
 import Quickshell
 
 Singleton {
-    readonly property color shellBackgroundColor: "#f51c1c20"
-    readonly property color selectedSurfaceColor: "#14ffffff"
-    readonly property color primaryTextColor: "#f5f5f5"
-    readonly property color mutedTextColor: "#77777e"
-    readonly property color accentHoverColor: "#22d3ee"
-    readonly property color accentTextColor: "#1c1c20"
-    readonly property color panelSurfaceColor: "#12ffffff"
-    readonly property color secondaryTextColor: "#a3a3ab"
-    readonly property color surfaceBorderColor: "#24ffffff"
-    readonly property color dividerColor: "#14ffffff"
-    readonly property color accentColor: "#22d3ee"
-    readonly property color dangerColor: "#ed939d"
+    // Carbonfox: https://github.com/EdenEast/nightfox.nvim/blob/main/lua/nightfox/palette/carbonfox.lua
+    readonly property color shellBackgroundColor: "#f5161616"
+    readonly property color selectedSurfaceColor: "#353535"
+    readonly property color primaryTextColor: "#f2f4f8"
+    readonly property color mutedTextColor: "#7b7c7e"
+    readonly property color accentHoverColor: "#8cb6ff"
+    readonly property color accentTextColor: "#161616"
+    readonly property color panelSurfaceColor: "#252525"
+    readonly property color secondaryTextColor: "#b6b8bb"
+    readonly property color surfaceBorderColor: "#525253"
+    readonly property color dividerColor: "#353535"
+    readonly property color accentColor: "#78a9ff"
+    readonly property color dangerColor: "#ee5396"
+    readonly property color textSelectionColor: "#525253"
 }

@@ -18,7 +18,8 @@ PanelWindow {
     readonly property bool opened: LauncherState.visible && LauncherState.outputName === modelData.name
     property string displayedMode: "runner"
     readonly property bool switchingMode: opened && displayedMode !== LauncherState.mode
-    readonly property bool dockWanted: hoverVisible || LauncherState.barPinned || opened || expansion > 0 || notificationsOpen || brightnessOpen || tray.expanded
+    readonly property bool dockWanted: hoverVisible || hover.hovered || LauncherState.barPinned || opened || expansion > 0 || notificationsOpen || brightnessOpen || tray.expanded
+    readonly property bool brightnessHovered: brightnessButton.hovered || brightnessHover.hovered
     property real reveal: dockWanted ? 1 : 0
     property real expansion: opened && reveal > 0.6 && !switchingMode ? 1 : 0
     readonly property real dockWidth: Math.min(modelData.width - 24, dockRow.width + 24)
@@ -51,6 +52,18 @@ PanelWindow {
 
     function focusSearch(): void {
         if (opened) launcher.focusTarget.forceActiveFocus();
+    }
+    function showBrightness(): void {
+        notificationsOpen = false;
+        brightnessOpen = true;
+    }
+    onBrightnessHoveredChanged: {
+        if (brightnessHovered) brightnessHideTimer.stop();
+        else if (brightnessOpen) brightnessHideTimer.restart();
+    }
+    onBrightnessOpenChanged: {
+        if (brightnessOpen && !brightnessHovered) brightnessHideTimer.restart();
+        else brightnessHideTimer.stop();
     }
     function syncMode(): void {
         if (opened) {
@@ -100,6 +113,11 @@ PanelWindow {
         interval: ShellMetrics.hideDelay
         onTriggered: if (!hover.hovered) root.hoverVisible = false
     }
+    Timer {
+        id: brightnessHideTimer
+        interval: ShellMetrics.hideDelay
+        onTriggered: if (!root.brightnessHovered) root.brightnessOpen = false
+    }
     SystemClock { id: clock; precision: SystemClock.Minutes }
     Binding {
         target: BrightnessService
@@ -133,21 +151,6 @@ PanelWindow {
         visible: root.opened
         onClicked: LauncherState.visible = false
     }
-    Item {
-        x: surface.x
-        y: Math.min(root.height - 2, surface.y)
-        width: surface.width
-        height: Math.max(2, root.height - y)
-        HoverHandler {
-            id: hover
-            onHoveredChanged: {
-                if (hovered) {
-                    hideTimer.stop();
-                    root.hoverVisible = true;
-                } else hideTimer.restart();
-            }
-        }
-    }
     Rectangle {
         id: surface
         x: (root.width - width) / 2
@@ -159,6 +162,17 @@ PanelWindow {
         color: Theme.shellBackgroundColor
         border.width: 1
         border.color: Theme.surfaceBorderColor
+        // Track the surface and its children, including the route to the bottom edge.
+        HoverHandler {
+            id: hover
+            margin: ShellMetrics.dockMargin + 2
+            onHoveredChanged: {
+                if (hovered) {
+                    hideTimer.stop();
+                    root.hoverVisible = true;
+                } else hideTimer.restart();
+            }
+        }
         layer.enabled: true
         layer.effect: MultiEffect {
             shadowEnabled: true
@@ -207,14 +221,13 @@ PanelWindow {
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 DockButton {
+                    id: brightnessButton
                     anchors.verticalCenter: parent.verticalCenter
                     glyph: Icons.brightness
                     label: "Brightness"
                     active: root.brightnessOpen
-                    onClicked: {
-                        root.notificationsOpen = false;
-                        root.brightnessOpen = !root.brightnessOpen;
-                    }
+                    onHoveredChanged: if (hovered && enabled) root.showBrightness()
+                    onClicked: root.showBrightness()
                 }
                 DockButton {
                     anchors.verticalCenter: parent.verticalCenter
@@ -276,8 +289,8 @@ PanelWindow {
         implicitWidth: Math.min(360, root.screen.width)
         implicitHeight: Math.min(brightnessPanel.implicitHeight + 32, root.screen.height - 64)
         exclusionMode: ExclusionMode.Ignore
-        anchors { bottom: true; right: true }
-        margins { bottom: 78; right: 12 }
+        anchors.bottom: true
+        margins.bottom: ShellMetrics.dockMargin + ShellMetrics.dockHeight + 12
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-brightness"
         WlrLayershell.keyboardFocus: root.brightnessOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
@@ -286,6 +299,7 @@ PanelWindow {
             color: Theme.shellBackgroundColor
             radius: 20
             border.color: Theme.surfaceBorderColor
+            HoverHandler { id: brightnessHover }
             BrightnessPanel {
                 id: brightnessPanel
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
@@ -302,8 +316,8 @@ PanelWindow {
         implicitWidth: Math.min(380, root.screen.width)
         implicitHeight: Math.max(1, Math.min(600, root.screen.height - 64))
         exclusionMode: ExclusionMode.Ignore
-        anchors { bottom: true; right: true }
-        margins { bottom: 78; right: 12 }
+        anchors.top: true
+        margins.top: ShellMetrics.dockMargin
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
         WlrLayershell.keyboardFocus: root.notificationsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
@@ -329,8 +343,8 @@ PanelWindow {
         implicitWidth: Math.min(380, root.screen.width)
         implicitHeight: stack.desiredHeight
         exclusionMode: ExclusionMode.Ignore
-        anchors { bottom: true; right: true }
-        margins { bottom: 78; right: 12 }
+        anchors.top: true
+        margins.top: ShellMetrics.dockMargin
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-popups"
 

@@ -7,6 +7,7 @@ Rectangle {
     property string glyph
     property string label
     property bool active: false
+    readonly property bool hovered: mouse.containsMouse
     signal clicked()
     width: 32
     height: 36

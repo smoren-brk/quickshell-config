@@ -147,7 +147,7 @@ Item {
             anchors { left: parent.left; right: closeButton.left; top: parent.top; bottom: parent.bottom; leftMargin: 48; rightMargin: 8 }
             verticalAlignment: TextInput.AlignVCenter
             color: Theme.primaryTextColor
-            selectionColor: "#8060b8c9"
+            selectionColor: Theme.textSelectionColor
             selectedTextColor: Theme.primaryTextColor
             font.family: Typography.bodyFontFamily
             font.pixelSize: 15
