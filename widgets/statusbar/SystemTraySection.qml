@@ -10,8 +10,8 @@ Rectangle {
     property bool expanded: false
     width: 28 + reveal.width
     height: 28
-    radius: 14
-    color: Theme.panelSurfaceColor
+    radius: 6
+    color: "transparent"
 
     Item {
         id: reveal
@@ -37,7 +37,7 @@ Rectangle {
                     required property var modelData
                     width: 28
                     height: 28
-                    radius: 14
+                    radius: 6
                     color: mouse.containsMouse ? Theme.panelSurfaceColor : "transparent"
         
                     function showMenu(): void {
@@ -86,7 +86,7 @@ Rectangle {
         anchors.right: parent.right
         width: 28
         height: 28
-        radius: 14
+        radius: 6
         color: toggleMouse.containsMouse ? Theme.surfaceBorderColor : "transparent"
 
         Text {

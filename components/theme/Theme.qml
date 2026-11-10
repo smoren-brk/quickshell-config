@@ -4,15 +4,16 @@ import QtQuick
 import Quickshell
 
 Singleton {
-    readonly property color shellBackgroundColor: "#161616"
-    readonly property color selectedSurfaceColor: "#1e1e2e"
-    readonly property color primaryTextColor: "#cdd6f4"
-    readonly property color mutedTextColor: "#6c7086"
-    readonly property color accentHoverColor: "#e5c890"
-    readonly property color accentTextColor: "#11111b"
-    readonly property color panelSurfaceColor: "#222222"
-    readonly property color secondaryTextColor: "#a6adc8"
-    readonly property color surfaceBorderColor: "#454545"
-    readonly property color accentColor: "#ef9f76"
-    readonly property color dangerColor: "#f38ba8"
+    readonly property color shellBackgroundColor: "#f51c1c20"
+    readonly property color selectedSurfaceColor: "#14ffffff"
+    readonly property color primaryTextColor: "#f5f5f5"
+    readonly property color mutedTextColor: "#77777e"
+    readonly property color accentHoverColor: "#22d3ee"
+    readonly property color accentTextColor: "#1c1c20"
+    readonly property color panelSurfaceColor: "#12ffffff"
+    readonly property color secondaryTextColor: "#a3a3ab"
+    readonly property color surfaceBorderColor: "#24ffffff"
+    readonly property color dividerColor: "#14ffffff"
+    readonly property color accentColor: "#22d3ee"
+    readonly property color dangerColor: "#ed939d"
 }

@@ -7,6 +7,7 @@ Singleton {
     id: root
 
     property var workspaces: []
+    property var windows: []
     property bool connected: false
     readonly property string focusedOutput: workspaces.find(workspace => workspace.isFocused)?.output || ""
 
@@ -31,6 +32,39 @@ Singleton {
             console.warn("Could not activate Niri workspace:", result.error);
     }
 
+    function refreshWindows(): void {
+        const result = [];
+        if (connected) {
+            for (let row = 0; row < windowObjects.count; row++) {
+                const object = windowObjects.objectAt(row);
+                if (object) result.push(object.snapshot);
+            }
+        }
+        windows = result;
+    }
+
+    Instantiator {
+        id: windowObjects
+        model: niri.windows
+        delegate: QtObject {
+            required property var model
+            readonly property var snapshot: ({
+                id: model.id, appId: model.appId, title: model.title,
+                workspaceId: model.workspaceId, isFocused: model.isFocused,
+                isUrgent: model.isUrgent
+            })
+            onSnapshotChanged: Qt.callLater(root.refreshWindows)
+        }
+        onObjectAdded: Qt.callLater(root.refreshWindows)
+        onObjectRemoved: Qt.callLater(root.refreshWindows)
+    }
+
+    function activateWindow(id: real): void {
+        const result = niri.focusWindow(id);
+        if (!result.ok)
+            console.warn("Could not activate Niri window:", result.error);
+    }
+
     // Shared connection, following imiric/quickshell-niri's service pattern.
     Niri {
         id: niri
@@ -41,10 +75,12 @@ Singleton {
         onConnected: {
             root.connected = true;
             root.refreshWorkspaces();
+            root.refreshWindows();
         }
         onDisconnected: {
             root.connected = false;
             root.workspaces = [];
+            root.windows = [];
         }
         onErrorOccurred: error => console.warn("Niri connection error:", error)
     }
