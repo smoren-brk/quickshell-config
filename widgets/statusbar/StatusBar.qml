@@ -19,7 +19,7 @@ PanelWindow {
     property string displayedMode: "runner"
     readonly property bool switchingMode: opened && displayedMode !== LauncherState.mode
     readonly property bool dockWanted: hoverVisible || hover.hovered || LauncherState.barPinned || opened || expansion > 0 || notificationsOpen || brightnessOpen || tray.expanded
-    readonly property bool brightnessHovered: brightnessButton.hovered || brightnessHover.hovered
+    readonly property bool popupOpen: notificationsOpen || brightnessOpen || tray.expanded
     property real reveal: dockWanted ? 1 : 0
     property real expansion: opened && reveal > 0.6 && !switchingMode ? 1 : 0
     readonly property real dockWidth: Math.min(modelData.width - 24, dockRow.width + 24)
@@ -44,26 +44,19 @@ PanelWindow {
     // Only the surface and its route to the bottom edge receive pointer events.
     // Expanded modes additionally receive outside clicks to dismiss them.
     mask: Region {
-        x: root.opened ? 0 : Math.round(surface.x)
-        y: root.opened ? 0 : Math.min(root.height - 2, Math.round(surface.y))
-        width: root.opened ? root.width : Math.round(surface.width)
-        height: root.opened ? root.height : Math.max(2, root.height - Math.round(surface.y))
+        x: root.opened || root.popupOpen ? 0 : Math.round(surface.x)
+        y: root.opened || root.popupOpen ? 0 : Math.min(root.height - 2, Math.round(surface.y))
+        width: root.opened || root.popupOpen ? root.width : Math.round(surface.width)
+        height: root.opened || root.popupOpen ? root.height : Math.max(2, root.height - Math.round(surface.y))
     }
 
     function focusSearch(): void {
         if (opened) launcher.focusTarget.forceActiveFocus();
     }
-    function showBrightness(): void {
+    function toggleBrightness(): void {
         notificationsOpen = false;
-        brightnessOpen = true;
-    }
-    onBrightnessHoveredChanged: {
-        if (brightnessHovered) brightnessHideTimer.stop();
-        else if (brightnessOpen) brightnessHideTimer.restart();
-    }
-    onBrightnessOpenChanged: {
-        if (brightnessOpen && !brightnessHovered) brightnessHideTimer.restart();
-        else brightnessHideTimer.stop();
+        tray.expanded = false;
+        brightnessOpen = !brightnessOpen;
     }
     function syncMode(): void {
         if (opened) {
@@ -113,11 +106,6 @@ PanelWindow {
         interval: ShellMetrics.hideDelay
         onTriggered: if (!hover.hovered) root.hoverVisible = false
     }
-    Timer {
-        id: brightnessHideTimer
-        interval: ShellMetrics.hideDelay
-        onTriggered: if (!root.brightnessHovered) root.brightnessOpen = false
-    }
     SystemClock { id: clock; precision: SystemClock.Minutes }
     Binding {
         target: BrightnessService
@@ -148,8 +136,22 @@ PanelWindow {
 
     MouseArea {
         anchors.fill: parent
-        visible: root.opened
-        onClicked: LauncherState.visible = false
+        visible: root.opened || root.popupOpen
+        onClicked: {
+            LauncherState.visible = false;
+            root.brightnessOpen = false;
+            root.notificationsOpen = false;
+            tray.expanded = false;
+        }
+    }
+    RectangularShadow {
+        anchors.fill: surface
+        radius: surface.radius
+        blur: 16
+        offset.y: 3
+        color: "#30000000"
+        opacity: root.reveal
+        visible: surface.visible
     }
     Rectangle {
         id: surface
@@ -160,8 +162,6 @@ PanelWindow {
         radius: 8 + 4 * root.expansion
         visible: root.reveal > 0
         color: Theme.shellBackgroundColor
-        border.width: 1
-        border.color: Theme.surfaceBorderColor
         // Track the surface and its children, including the route to the bottom edge.
         HoverHandler {
             id: hover
@@ -172,13 +172,6 @@ PanelWindow {
                     root.hoverVisible = true;
                 } else hideTimer.restart();
             }
-        }
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: "#66000000"
-            shadowBlur: 0.4
-            shadowVerticalOffset: 3
         }
         // Consume clicks in the surface's padding, ahead of the outside target.
         MouseArea { anchors.fill: parent }
@@ -219,6 +212,12 @@ PanelWindow {
                     id: tray
                     barWindow: root
                     anchors.verticalCenter: parent.verticalCenter
+                    onExpandedChanged: {
+                        if (expanded) {
+                            root.brightnessOpen = false;
+                            root.notificationsOpen = false;
+                        }
+                    }
                 }
                 DockButton {
                     id: brightnessButton
@@ -226,8 +225,7 @@ PanelWindow {
                     glyph: Icons.brightness
                     label: "Brightness"
                     active: root.brightnessOpen
-                    onHoveredChanged: if (hovered && enabled) root.showBrightness()
-                    onClicked: root.showBrightness()
+                    onClicked: root.toggleBrightness()
                 }
                 DockButton {
                     anchors.verticalCenter: parent.verticalCenter
@@ -236,6 +234,7 @@ PanelWindow {
                     active: root.notificationsOpen || NotificationService.notificationCount > 0
                     onClicked: {
                         root.brightnessOpen = false;
+                        tray.expanded = false;
                         root.notificationsOpen = !root.notificationsOpen;
                     }
                 }
@@ -299,7 +298,6 @@ PanelWindow {
             color: Theme.shellBackgroundColor
             radius: 20
             border.color: Theme.surfaceBorderColor
-            HoverHandler { id: brightnessHover }
             BrightnessPanel {
                 id: brightnessPanel
                 anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
@@ -345,7 +343,8 @@ PanelWindow {
         exclusionMode: ExclusionMode.Ignore
         anchors.top: true
         margins.top: ShellMetrics.dockMargin
-        WlrLayershell.layer: WlrLayer.Overlay
+        // Niri hides the top layer behind fullscreen windows on this output.
+        WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "qqq-notification-popups"
 
         NotificationStack {

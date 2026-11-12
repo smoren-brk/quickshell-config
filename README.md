@@ -4,7 +4,7 @@ A compact, Wisp-inspired shell for Niri. Hover the bottom centre of either scree
 
 The dock includes running applications, workspace dots and the current workspace's number/name, system tray, brightness, notifications, clock, and power. Click an application to focus it; repeated clicks cycle its windows. Application icons are grouped per output. Scroll the app strip if it overflows.
 
-The dock stays visible while hovered. Hover the brightness icon to open its controls centered above the dock; they stay open while the pointer is over the icon or popup and close after a short delay when it leaves. Notification popups and history appear at the top center of each screen.
+The borderless dock has a subtle shadow and stays visible while hovered. Click the brightness icon to toggle its controls centered above the dock. Brightness, notification history, and the tray open only on click, and opening one closes the others. Click the same control again or click outside to dismiss; brightness and notification history also support Escape. Notification popups and history appear at the top center of each screen. Banners use the top layer, so Niri hides them behind fullscreen windows on that output; their normal timeout continues and notifications remain in history.
 
 The runner supports application search, Up/Down selection, Enter to launch, and Escape or an outside click to close. Recently launched applications rank first for the current shell session. The power menu uses the same layout and keys. Restart, shutdown, and logout require a second Enter or click; Escape first cancels confirmation, then closes the menu. Lock uses `loginctl lock-session` and requires a session locker listening for that request.
 
