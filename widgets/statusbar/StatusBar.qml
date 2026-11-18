@@ -2,6 +2,7 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Effects
+import "../../components"
 import "../../components/theme"
 import "../../components/state"
 import "../../services"
@@ -36,10 +37,12 @@ PanelWindow {
     WlrLayershell.keyboardFocus: opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     BackgroundEffect.blurRegion: Region {
         x: Math.round(surface.x)
-        y: Math.round(surface.y)
+        y: Math.min(root.height - ShellMetrics.borderWidth - 1, Math.round(surface.y))
         width: Math.round(surface.width)
-        height: Math.round(surface.height)
-        radius: Math.round(surface.radius)
+        // Keep a nonempty region at both ends of the reveal animation;
+        // Niri otherwise falls back to blurring the whole window.
+        height: Math.max(1, Math.round(surface.height))
+        radius: Math.min(Math.round(surface.radius), Math.floor(height / 2))
     }
     // Only the surface and its route to the bottom edge receive pointer events.
     // Expanded modes additionally receive outside clicks to dismiss them.
@@ -153,19 +156,19 @@ PanelWindow {
         opacity: root.reveal
         visible: surface.visible
     }
-    Rectangle {
+    AttachedSurface {
         id: surface
         x: (root.width - width) / 2
-        y: root.height - height - ShellMetrics.dockMargin + (1 - root.reveal) * (ShellMetrics.dockHeight + ShellMetrics.dockMargin + 2)
+        y: root.height - ShellMetrics.borderWidth - height
         width: root.dockWidth + (root.runnerWidth - root.dockWidth) * root.expansion
-        height: ShellMetrics.dockHeight + (root.contentHeight - ShellMetrics.dockHeight) * root.expansion
+        height: (ShellMetrics.dockHeight + (root.contentHeight - ShellMetrics.dockHeight) * root.expansion) * root.reveal
         radius: 8 + 4 * root.expansion
         visible: root.reveal > 0
         color: Theme.shellBackgroundColor
         // Track the surface and its children, including the route to the bottom edge.
         HoverHandler {
             id: hover
-            margin: ShellMetrics.dockMargin + 2
+            margin: ShellMetrics.borderWidth + surface.radius
             onHoveredChanged: {
                 if (hovered) {
                     hideTimer.stop();
@@ -282,75 +285,100 @@ PanelWindow {
         }
     }
     PanelWindow {
+        id: brightnessWindow
+        property real reveal: root.brightnessOpen ? 1 : 0
+        readonly property real fullHeight: Math.min(brightnessPanel.implicitHeight + 32, root.screen.height - 64)
+        Behavior on reveal { NumberAnimation { duration: root.brightnessOpen ? ShellMetrics.expandDuration : ShellMetrics.collapseDuration; easing.type: Easing.OutCubic } }
         screen: root.screen
-        visible: root.brightnessOpen
+        visible: root.brightnessOpen || reveal > 0
         color: "transparent"
-        implicitWidth: Math.min(360, root.screen.width)
-        implicitHeight: Math.min(brightnessPanel.implicitHeight + 32, root.screen.height - 64)
+        implicitWidth: Math.min(400, root.screen.width - 2 * ShellMetrics.borderWidth)
+        implicitHeight: Math.max(1, Math.round(fullHeight * reveal))
         exclusionMode: ExclusionMode.Ignore
         anchors.bottom: true
-        margins.bottom: ShellMetrics.dockMargin + ShellMetrics.dockHeight + 12
+        margins.bottom: Math.round(root.height - surface.y)
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-brightness"
         WlrLayershell.keyboardFocus: root.brightnessOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-        Rectangle {
+        AttachedSurface {
             anchors.fill: parent
-            color: Theme.shellBackgroundColor
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
             radius: 20
-            border.color: Theme.surfaceBorderColor
-            BrightnessPanel {
-                id: brightnessPanel
-                anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
-                focus: root.brightnessOpen
-                Keys.onEscapePressed: root.brightnessOpen = false
+            Item {
+                anchors.fill: parent
+                clip: true
+                BrightnessPanel {
+                    id: brightnessPanel
+                    anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
+                    focus: root.brightnessOpen
+                    Keys.onEscapePressed: root.brightnessOpen = false
+                }
             }
         }
     }
 
     PanelWindow {
+        id: historyWindow
+        property real reveal: root.notificationsOpen ? 1 : 0
+        readonly property real fullHeight: Math.min(600, root.screen.height - 64)
+        Behavior on reveal { NumberAnimation { duration: root.notificationsOpen ? ShellMetrics.expandDuration : ShellMetrics.collapseDuration; easing.type: Easing.OutCubic } }
         screen: root.screen
-        visible: root.notificationsOpen
+        visible: root.notificationsOpen || reveal > 0
         color: "transparent"
-        implicitWidth: Math.min(380, root.screen.width)
-        implicitHeight: Math.max(1, Math.min(600, root.screen.height - 64))
+        implicitWidth: Math.min(420, root.screen.width - 2 * ShellMetrics.borderWidth)
+        implicitHeight: Math.max(1, Math.round(fullHeight * reveal))
         exclusionMode: ExclusionMode.Ignore
         anchors.top: true
-        margins.top: ShellMetrics.dockMargin
+        margins.top: ShellMetrics.borderWidth
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
         WlrLayershell.keyboardFocus: root.notificationsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-        Rectangle {
+        AttachedSurface {
             anchors.fill: parent
-            color: Theme.shellBackgroundColor
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            attachedTop: true
             radius: 20
-            border.color: Theme.surfaceBorderColor
-            NotificationPanel {
+            Item {
                 anchors.fill: parent
-                anchors.margins: 16
-                focus: root.notificationsOpen
-                Keys.onEscapePressed: root.notificationsOpen = false
+                clip: true
+                NotificationPanel {
+                    anchors { top: parent.top; left: parent.left; right: parent.right; margins: 16 }
+                    height: historyWindow.fullHeight - 32
+                    focus: root.notificationsOpen
+                    Keys.onEscapePressed: root.notificationsOpen = false
+                }
             }
         }
     }
 
     PanelWindow {
         screen: root.screen
-        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen
+        visible: NotificationService.popupNotificationCount > 0 && !root.notificationsOpen && historyWindow.reveal === 0
         color: "transparent"
-        implicitWidth: Math.min(380, root.screen.width)
+        implicitWidth: Math.min(420, root.screen.width - 2 * ShellMetrics.borderWidth)
         implicitHeight: stack.desiredHeight
         exclusionMode: ExclusionMode.Ignore
         anchors.top: true
-        margins.top: ShellMetrics.dockMargin
+        margins.top: ShellMetrics.borderWidth
         // Niri hides the top layer behind fullscreen windows on this output.
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.namespace: "qqq-notification-popups"
 
-        NotificationStack {
-            id: stack
+        AttachedSurface {
             anchors.fill: parent
-            maximumHeight: Math.max(1, root.screen.height - 64)
+            anchors.leftMargin: 20
+            anchors.rightMargin: 20
+            attachedTop: true
+            radius: 20
+
+            NotificationStack {
+                id: stack
+                anchors.fill: parent
+                maximumHeight: Math.max(1, root.screen.height - 64)
+            }
         }
     }
 }
