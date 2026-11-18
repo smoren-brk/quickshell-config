@@ -9,6 +9,7 @@ Item {
     property real radius: 12
     property bool attachedTop: false
     property color color: Theme.shellBackgroundColor
+    readonly property real corner: Math.max(0, Math.min(radius, width / 2, height / 2))
 
     Shape {
         width: root.width
@@ -19,18 +20,20 @@ Item {
             yScale: root.attachedTop ? -1 : 1
         }
         ShapePath {
-            strokeWidth: -1
+            // Leave the attachment edge open: fill closes it implicitly,
+            // while the hairline follows only the exposed contour.
+            strokeWidth: 1
+            strokeColor: Qt.alpha(Theme.surfaceBorderColor, 0.75)
             fillColor: root.color
-            PathSvg {
-                path: {
-                    const w = root.width, h = root.height;
-                    const r = Math.max(0, Math.min(root.radius, w / 2, h / 2));
-                    return `M ${r} 0 H ${w-r} Q ${w} 0 ${w} ${r}
-                        V ${h-r} Q ${w} ${h} ${w+r} ${h}
-                        H ${-r} Q 0 ${h} 0 ${h-r}
-                        V ${r} Q 0 0 ${r} 0 Z`;
-                }
-            }
+            startX: -root.corner
+            startY: root.height
+            PathQuad { x: 0.5; y: root.height - root.corner; controlX: 0.5; controlY: root.height }
+            PathLine { x: 0.5; y: root.corner + 0.5 }
+            PathQuad { x: root.corner + 0.5; y: 0.5; controlX: 0.5; controlY: 0.5 }
+            PathLine { x: root.width - root.corner - 0.5; y: 0.5 }
+            PathQuad { x: root.width - 0.5; y: root.corner + 0.5; controlX: root.width - 0.5; controlY: 0.5 }
+            PathLine { x: root.width - 0.5; y: root.height - root.corner }
+            PathQuad { x: root.width + root.corner; y: root.height; controlX: root.width - 0.5; controlY: root.height }
         }
     }
 }

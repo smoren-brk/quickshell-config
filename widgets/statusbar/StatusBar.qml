@@ -35,15 +35,6 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "qqq-bar"
     WlrLayershell.keyboardFocus: opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    BackgroundEffect.blurRegion: Region {
-        x: Math.round(surface.x)
-        y: Math.min(root.height - ShellMetrics.borderWidth - 1, Math.round(surface.y))
-        width: Math.round(surface.width)
-        // Keep a nonempty region at both ends of the reveal animation;
-        // Niri otherwise falls back to blurring the whole window.
-        height: Math.max(1, Math.round(surface.height))
-        radius: Math.min(Math.round(surface.radius), Math.floor(height / 2))
-    }
     // Only the surface and its route to the bottom edge receive pointer events.
     // Expanded modes additionally receive outside clicks to dismiss them.
     mask: Region {
@@ -118,8 +109,7 @@ PanelWindow {
         restoreMode: Binding.RestoreBindingOrValue
     }
 
-    // Unmap the large surface completely while hidden. An empty client blur
-    // region can otherwise fall back to a compositor's whole-surface rule.
+    // Only the small activation strip needs to stay mapped while hidden.
     PanelWindow {
         screen: root.screen
         visible: !root.dockWanted && root.reveal === 0
@@ -293,17 +283,19 @@ PanelWindow {
         visible: root.brightnessOpen || reveal > 0
         color: "transparent"
         implicitWidth: Math.min(400, root.screen.width - 2 * ShellMetrics.borderWidth)
-        implicitHeight: Math.max(1, Math.round(fullHeight * reveal))
+        // Keep the Wayland window stable; animate only the content below.
+        implicitHeight: fullHeight
         exclusionMode: ExclusionMode.Ignore
         anchors.bottom: true
         margins.bottom: Math.round(root.height - surface.y)
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-brightness"
         WlrLayershell.keyboardFocus: root.brightnessOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        mask: Region { x: 0; y: brightnessSurface.y; width: brightnessWindow.width; height: brightnessSurface.height }
         AttachedSurface {
-            anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
+            id: brightnessSurface
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 20 }
+            height: brightnessWindow.fullHeight * brightnessWindow.reveal
             radius: 20
             Item {
                 anchors.fill: parent
@@ -327,18 +319,19 @@ PanelWindow {
         visible: root.notificationsOpen || reveal > 0
         color: "transparent"
         implicitWidth: Math.min(420, root.screen.width - 2 * ShellMetrics.borderWidth)
-        implicitHeight: Math.max(1, Math.round(fullHeight * reveal))
+        implicitHeight: fullHeight
         exclusionMode: ExclusionMode.Ignore
         anchors.top: true
         margins.top: ShellMetrics.borderWidth
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "qqq-notification-history"
         WlrLayershell.keyboardFocus: root.notificationsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+        mask: Region { x: 0; y: 0; width: historyWindow.width; height: historySurface.height }
 
         AttachedSurface {
-            anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
+            id: historySurface
+            anchors { top: parent.top; left: parent.left; right: parent.right; leftMargin: 20; rightMargin: 20 }
+            height: historyWindow.fullHeight * historyWindow.reveal
             attachedTop: true
             radius: 20
             Item {

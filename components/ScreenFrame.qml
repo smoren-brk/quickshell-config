@@ -12,8 +12,7 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
-    // The compositor blurs qqq-* panels. This full-screen, hollow surface
-    // must stay outside that rule or the transparent desktop is blurred too.
+    // Decorative, click-through layer; compositor blur is disabled in Niri.
     WlrLayershell.namespace: "wisp-frame"
     mask: Region {}
 
